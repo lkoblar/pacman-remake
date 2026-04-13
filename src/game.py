@@ -11,12 +11,11 @@ from src.ghost import Ghost
 from src.food import FoodManager
 from src.ui import UI
 
-
 class Game:
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption("Pac-Man")
+        pygame.display.set_caption("Pac-Man Remake")
         self.clock = pygame.time.Clock()
         self.running = True
         self.state = GameState.MENU
@@ -33,6 +32,8 @@ class Game:
         self.player = None
         self.ghosts = []
         self.food_manager = None
+        
+        self.buttons = {}
 
     def load_level(self, level_num):
         level_path = os.path.join(LEVELS_DIR, f"level{level_num}.txt")
@@ -64,6 +65,20 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
                 return
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = event.pos
+                if self.state == GameState.MENU:
+                    if self.buttons.get("play") and self.buttons["play"].collidepoint(mouse_pos):
+                        self.start_game()
+                    elif self.buttons.get("exit") and self.buttons["exit"].collidepoint(mouse_pos):
+                        self.running = False
+                
+                elif self.state == GameState.PAUSED:
+                    if self.buttons.get("resume") and self.buttons["resume"].collidepoint(mouse_pos):
+                        self.state = GameState.PLAYING
+                    elif self.buttons.get("main_menu") and self.buttons["main_menu"].collidepoint(mouse_pos):
+                        self.state = GameState.MENU
 
             if self.state == GameState.MENU:
                 self._handle_menu_events(event)
@@ -142,22 +157,33 @@ class Game:
         self.screen.fill(BLACK)
 
         if self.state == GameState.MENU:
-            self.ui.draw_menu()
-        elif self.state in (GameState.PLAYING, GameState.PAUSED):
+            play_rect, levels_rect, exit_rect = self.ui.draw_menu()
+            self.buttons["play"] = play_rect
+            self.buttons["levels"] = levels_rect
+            self.buttons["exit"] = exit_rect
+
+        elif self.state in (GameState.PLAYING, GameState.PAUSED, GameState.LEVEL_COMPLETE):
             if self.game_map:
                 self.game_map.render(self.screen)
             if self.food_manager:
                 self.food_manager.render(self.screen)
+
             for ghost in self.ghosts:
                 ghost.draw(self.screen)
             if self.player:
                 self.player.draw(self.screen)
+
             self.ui.draw_hud(self.score, self.lives)
+
             if self.state == GameState.PAUSED:
-                self.ui.draw_pause()
+                resume_rect, menu_rect = self.ui.draw_pause()
+                self.buttons["resume"] = resume_rect
+                self.buttons["main_menu"] = menu_rect
+            
+            elif self.state == GameState.LEVEL_COMPLETE:
+                self.ui.draw_level_complete(self.current_level)
+
         elif self.state == GameState.GAME_OVER:
             self.ui.draw_game_over(self.score)
-        elif self.state == GameState.LEVEL_COMPLETE:
-            self.ui.draw_level_complete(self.current_level)
 
         pygame.display.flip()
