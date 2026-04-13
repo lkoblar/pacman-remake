@@ -55,18 +55,11 @@ class UI:
         self.screen.blit(menu_text, menu_rect)
 
     def draw_hud(self, score, lives):
-        # Za test uporabimo fiksno y koordinato na sredini ekrana, 
-        # da vidimo, če sploh kaj nariše!
         y_poz = 20 
         
-        # Ustvarimo napis (Score)
-        # Preveri, če je WHITE definiran, sicer uporabi (255, 255, 255)
         score_surf = self.font_small.render(f"SCORE: {score}", True, (255, 255, 255))
-        
-        # Izpis na zaslon
         self.screen.blit(score_surf, (30, y_poz))
         
-        # Ustvarimo napis (Lives)
         lives_surf = self.font_small.render(f"LIVES: {lives}", True, (255, 255, 0))
         self.screen.blit(lives_surf, (SCREEN_WIDTH - 200, y_poz))
 
