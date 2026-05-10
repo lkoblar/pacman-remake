@@ -5,12 +5,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 LEVELS_DIR = os.path.join(BASE_DIR, "levels")
 
-TILE_SIZE = 8
+TILE_SIZE = 16
 SCALE = 4
 SCALED_TILE = TILE_SIZE * SCALE
 
-COLS = 28
-ROWS = 36
+COLS = 14
+ROWS = 18
 SCREEN_WIDTH = COLS * SCALED_TILE
 SCREEN_HEIGHT = ROWS * SCALED_TILE
 
@@ -28,14 +28,12 @@ CYAN = (92, 225, 230)
 MAGENTA = (226, 169, 241)
 ORANGE = (255, 145, 77)
 
-
 class GameState(Enum):
     MENU = auto()
     PLAYING = auto()
     PAUSED = auto()
     GAME_OVER = auto()
     LEVEL_COMPLETE = auto()
-
 
 WALL = "#"
 DOT = "."
