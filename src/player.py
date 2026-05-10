@@ -9,6 +9,7 @@ DIRECTION_VECTORS = {
 }
 
 CENTER_EPSILON = 0.5
+HALF_OFFSET = (SCALED_SPRITE - SCALED_TILE) // 2
 
 
 class Player:
@@ -17,17 +18,18 @@ class Player:
         self.direction = "right"
         self.next_direction = "right"
         self.animation_frame = 0
-        self.animation_timer = 0
+        self.animation_timer = 0.0
         self.animation_speed = 0.1
 
         spawn = game_map.get_spawn_position(PLAYER_SPAWN)
         if spawn:
             self.grid_x, self.grid_y = spawn
         else:
-            self.grid_x, self.grid_y = 14, 26
+            self.grid_x, self.grid_y = 1, 1
 
         self.spawn_x = self.grid_x
         self.spawn_y = self.grid_y
+
         self.pixel_x = float(self.grid_x * SCALED_TILE)
         self.pixel_y = float(self.grid_y * SCALED_TILE)
 
@@ -45,53 +47,42 @@ class Player:
             self.next_direction = "right"
 
     def update(self, dt, game_map):
-        self._maybe_change_direction(game_map)
         self._move(dt, game_map)
         self._wrap_tunnel()
-        self._update_grid_position()
         self._update_animation(dt)
 
     def _at_tile_center(self):
+        target_x = self.grid_x * SCALED_TILE
+        target_y = self.grid_y * SCALED_TILE
         return (
-            abs(self.pixel_x - round(self.pixel_x / SCALED_TILE) * SCALED_TILE) < CENTER_EPSILON
-            and abs(self.pixel_y - round(self.pixel_y / SCALED_TILE) * SCALED_TILE) < CENTER_EPSILON
+            abs(self.pixel_x - target_x) <= CENTER_EPSILON
+            and abs(self.pixel_y - target_y) <= CENTER_EPSILON
         )
 
     def _snap_to_center(self):
-        self.pixel_x = float(round(self.pixel_x / SCALED_TILE) * SCALED_TILE)
-        self.pixel_y = float(round(self.pixel_y / SCALED_TILE) * SCALED_TILE)
+        self.pixel_x = float(self.grid_x * SCALED_TILE)
+        self.pixel_y = float(self.grid_y * SCALED_TILE)
 
-    def _can_move(self, direction, game_map):
+    def _can_move_from_tile(self, grid_x, grid_y, direction, game_map):
         if direction not in DIRECTION_VECTORS:
             return False
         dx, dy = DIRECTION_VECTORS[direction]
-        col = int(round(self.pixel_x / SCALED_TILE)) + dx
-        row = int(round(self.pixel_y / SCALED_TILE)) + dy
-        return not game_map.is_wall(col, row)
+        return not game_map.is_wall(grid_x + dx, grid_y + dy)
 
-    def _maybe_change_direction(self, game_map):
-        if not self._at_tile_center():
-            return
-        if self.next_direction == self.direction:
-            return
-        if self._can_move(self.next_direction, game_map):
-            self._snap_to_center()
-            self.direction = self.next_direction
+    def _next_tile(self, direction):
+        dx, dy = DIRECTION_VECTORS[direction]
+        return self.grid_x + dx, self.grid_y + dy
 
     def _distance_to_next_center(self):
         dx, dy = DIRECTION_VECTORS[self.direction]
         if dx > 0:
-            next_center = (int(self.pixel_x // SCALED_TILE) + 1) * SCALED_TILE
-            return next_center - self.pixel_x
+            return ((self.grid_x + 1) * SCALED_TILE) - self.pixel_x
         if dx < 0:
-            next_center = (int((self.pixel_x - 1) // SCALED_TILE)) * SCALED_TILE
-            return self.pixel_x - next_center
+            return self.pixel_x - ((self.grid_x - 1) * SCALED_TILE)
         if dy > 0:
-            next_center = (int(self.pixel_y // SCALED_TILE) + 1) * SCALED_TILE
-            return next_center - self.pixel_y
+            return ((self.grid_y + 1) * SCALED_TILE) - self.pixel_y
         if dy < 0:
-            next_center = (int((self.pixel_y - 1) // SCALED_TILE)) * SCALED_TILE
-            return self.pixel_y - next_center
+            return self.pixel_y - ((self.grid_y - 1) * SCALED_TILE)
         return 0.0
 
     def _step(self, distance):
@@ -100,19 +91,20 @@ class Player:
         self.pixel_y += dy * distance
 
     def _move(self, dt, game_map):
-        if self._at_tile_center() and not self._can_move(self.direction, game_map):
-            self._snap_to_center()
-            self.moving = False
-            return
-
         remaining = self.speed * dt
-        self.moving = True
+        self.moving = False
+
+        if self._at_tile_center():
+            self._snap_to_center()
 
         while remaining > 0:
             if self._at_tile_center():
-                self._maybe_change_direction(game_map)
-                if not self._can_move(self.direction, game_map):
-                    self._snap_to_center()
+                self._snap_to_center()
+
+                if self._can_move_from_tile(self.grid_x, self.grid_y, self.next_direction, game_map):
+                    self.direction = self.next_direction
+
+                if not self._can_move_from_tile(self.grid_x, self.grid_y, self.direction, game_map):
                     self.moving = False
                     return
 
@@ -120,24 +112,23 @@ class Player:
             if distance_to_center <= 0:
                 distance_to_center = float(SCALED_TILE)
 
-            if remaining < distance_to_center:
-                self._step(remaining)
-                remaining = 0
-            else:
-                self._step(distance_to_center)
-                remaining -= distance_to_center
+            step_distance = min(remaining, distance_to_center)
+            self._step(step_distance)
+            remaining -= step_distance
+            self.moving = True
+
+            if distance_to_center <= step_distance + CENTER_EPSILON:
+                self.grid_x, self.grid_y = self._next_tile(self.direction)
                 self._snap_to_center()
 
     def _wrap_tunnel(self):
         world_width = COLS * SCALED_TILE
         if self.pixel_x < -SCALED_TILE:
             self.pixel_x += world_width
+            self.grid_x = int(round(self.pixel_x / SCALED_TILE))
         elif self.pixel_x >= world_width:
             self.pixel_x -= world_width
-
-    def _update_grid_position(self):
-        self.grid_x = int(round(self.pixel_x / SCALED_TILE))
-        self.grid_y = int(round(self.pixel_y / SCALED_TILE))
+            self.grid_x = int(round(self.pixel_x / SCALED_TILE))
 
     def _update_animation(self, dt):
         if not self.moving:
@@ -155,16 +146,22 @@ class Player:
         self.direction = "right"
         self.next_direction = "right"
         self.moving = False
+        self.animation_frame = 0
+        self.animation_timer = 0.0
 
     def get_rect(self):
         return pygame.Rect(
-            int(self.pixel_x), int(self.pixel_y),
-            SCALED_SPRITE, SCALED_SPRITE,
+            int(self.pixel_x),
+            int(self.pixel_y),
+            SCALED_TILE,
+            SCALED_TILE,
         )
 
     def draw(self, surface):
         frames = self.sprites.get(self.direction, self.sprites.get("right"))
         if frames:
             frame = frames[int(self.animation_frame) % len(frames)]
-            offset = (SCALED_SPRITE - SCALED_TILE) // 2
-            surface.blit(frame, (int(self.pixel_x) - offset, int(self.pixel_y) - offset))
+            surface.blit(
+                frame,
+                (int(self.pixel_x) - HALF_OFFSET, int(self.pixel_y) - HALF_OFFSET),
+            )
