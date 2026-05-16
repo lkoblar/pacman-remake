@@ -37,7 +37,6 @@ class Game:
         self.buttons = {}
 
         self.audio = AudioManager()
-        self.audio.play_music()
 
     def load_level(self, level_num):
         level_path = os.path.join(LEVELS_DIR, f"level{level_num}.txt")
@@ -55,6 +54,7 @@ class Game:
         self.current_level = 1
         self.load_level(self.current_level)
         self.state = GameState.PLAYING
+        self.audio.play_music()
 
     def run(self):
         while self.running:
@@ -81,7 +81,9 @@ class Game:
                 elif self.state == GameState.PAUSED:
                     if self.buttons.get("resume") and self.buttons["resume"].collidepoint(mouse_pos):
                         self.state = GameState.PLAYING
+                        self.audio.play_music()
                     elif self.buttons.get("main_menu") and self.buttons["main_menu"].collidepoint(mouse_pos):
+                        self.audio.stop_music()
                         self.state = GameState.MENU
 
             if self.state == GameState.MENU:
@@ -105,12 +107,14 @@ class Game:
     def _handle_playing_events(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
+                self.audio.stop_music()
                 self.state = GameState.PAUSED
 
     def _handle_paused_events(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.state = GameState.PLAYING
+                self.audio.play_music()
 
     def _handle_game_over_events(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -123,6 +127,7 @@ class Game:
             if event.key == pygame.K_RETURN:
                 self.start_game()
             elif event.key == pygame.K_ESCAPE:
+                self.audio.stop_music()
                 self.state = GameState.MENU
 
     def _handle_level_complete_events(self, event):
@@ -160,11 +165,13 @@ class Game:
         for ghost in self.ghosts:
             if ghost.check_collision(self.player):
                 self.lives -= 1
-                self.audio.play_sound("death")
 
                 if self.lives <= 0:
+                    self.audio.play_sound("game_over")
+                    self.audio.stop_music()
                     self.state = GameState.GAME_OVER
                 else:
+                    self.audio.play_sound("death")
                     self.player.reset_position()
                     for g in self.ghosts:
                         g.reset_position()
