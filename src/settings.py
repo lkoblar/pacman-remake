@@ -6,7 +6,7 @@ ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 LEVELS_DIR = os.path.join(BASE_DIR, "levels")
 
 TILE_SIZE = 16
-SCALE = 4
+SCALE = 3
 SCALED_TILE = TILE_SIZE * SCALE
 
 COLS = 14
