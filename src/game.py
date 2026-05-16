@@ -10,6 +10,7 @@ from src.player import Player
 from src.ghost import Ghost
 from src.food import FoodManager
 from src.ui import UI
+from src.audio import AudioManager
 
 class Game:
     def __init__(self):
@@ -34,6 +35,9 @@ class Game:
         self.food_manager = None
         
         self.buttons = {}
+
+        self.audio = AudioManager()
+        self.audio.play_music()
 
     def load_level(self, level_num):
         level_path = os.path.join(LEVELS_DIR, f"level{level_num}.txt")
@@ -144,6 +148,10 @@ class Game:
 
         if self.food_manager and self.player:
             points = self.food_manager.check_collisions(self.player)
+
+            if points > 0:
+                self.audio.play_sound("dot")
+
             self.score += points
 
             if self.food_manager.all_collected():
@@ -152,6 +160,8 @@ class Game:
         for ghost in self.ghosts:
             if ghost.check_collision(self.player):
                 self.lives -= 1
+                self.audio.play_sound("death")
+
                 if self.lives <= 0:
                     self.state = GameState.GAME_OVER
                 else:
