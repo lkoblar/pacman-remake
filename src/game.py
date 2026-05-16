@@ -109,7 +109,13 @@ class Game:
                 self.state = GameState.PLAYING
 
     def _handle_game_over_events(self, event):
-        if event.type == pygame.KEYDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                mouse_pos = event.pos
+                if self.buttons.get("restart") and self.buttons["restart"].collidepoint(mouse_pos):
+                    self.start_game()
+
+        elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 self.start_game()
             elif event.key == pygame.K_ESCAPE:
@@ -184,6 +190,7 @@ class Game:
                 self.ui.draw_level_complete(self.current_level)
 
         elif self.state == GameState.GAME_OVER:
-            self.ui.draw_game_over(self.score)
+            restart_rect = self.ui.draw_game_over(self.score)
+            self.buttons["restart"] = restart_rect
 
         pygame.display.flip()

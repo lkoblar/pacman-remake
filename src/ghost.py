@@ -1,7 +1,7 @@
 import random
 import pygame
 
-from src.settings import GHOST_SPAWN, SCALED_TILE, SCALED_SPRITE
+from src.settings import GHOST_SPAWN, SCALED_TILE, SCALED_SPRITE, COLS, ROWS
 
 DIRECTION_VECTORS = {
     "up": (0, -1),
@@ -46,7 +46,7 @@ class Ghost:
 
     def reset_position(self):
         self.grid_x = self.spawn_x
-        self.grid_y = self.spawn_y
+        self.spawn_y = self.spawn_y
         self.pixel_x = float(self.grid_x * SCALED_TILE)
         self.pixel_y = float(self.grid_y * SCALED_TILE)
         self.direction = random.choice(list(DIRECTION_VECTORS.keys()))
@@ -65,7 +65,13 @@ class Ghost:
 
     def _can_move_from_tile(self, grid_x, grid_y, direction, game_map):
         dx, dy = DIRECTION_VECTORS[direction]
-        return not game_map.is_wall(grid_x + dx, grid_y + dy)
+        target_x = grid_x + dx
+        target_y = grid_y + dy
+
+        if target_x < 0 or target_x >= COLS or target_y < 0 or target_y >= ROWS:
+            return True
+
+        return not game_map.is_wall(target_x, target_y)
 
     def _next_tile(self, direction):
         dx, dy = DIRECTION_VECTORS[direction]
@@ -79,6 +85,10 @@ class Ghost:
         return valid
 
     def _choose_direction(self, game_map):
+        
+        if self.grid_x < 0 or self.grid_x >= COLS or self.grid_y < 0 or self.grid_y >= ROWS:
+            return
+
         valid = self._valid_directions(game_map)
         if not valid:
             return
@@ -121,6 +131,24 @@ class Ghost:
         self.pixel_x += dx * distance
         self.pixel_y += dy * distance
 
+    def _wrap_tunnel(self):
+        world_width = COLS * SCALED_TILE
+        world_height = ROWS * SCALED_TILE
+
+        if self.pixel_x < -SCALED_TILE // 2:
+            self.pixel_x += world_width
+            self.grid_x = COLS - 1
+        elif self.pixel_x >= world_width - SCALED_TILE // 2:
+            self.pixel_x -= world_width
+            self.grid_x = 0
+
+        if self.pixel_y < -SCALED_TILE // 2:
+            self.pixel_y += world_height
+            self.grid_y = ROWS - 1
+        elif self.pixel_y >= world_height - SCALED_TILE // 2:
+            self.pixel_y -= world_height
+            self.grid_y = 0
+
     def update(self, dt, game_map, player=None):
         remaining = self.speed * dt
 
@@ -149,9 +177,12 @@ class Ghost:
                 self.grid_x, self.grid_y = self._next_tile(self.direction)
                 self._snap_to_center()
 
-                valid = self._valid_directions(game_map)
-                if len(valid) >= 3:
-                    self._choose_direction(game_map)
+                if 0 <= self.grid_x < COLS and 0 <= self.grid_y < ROWS:
+                    valid = self._valid_directions(game_map)
+                    if len(valid) >= 3:
+                        self._choose_direction(game_map)
+
+        self._wrap_tunnel()
 
     def get_rect(self):
         return pygame.Rect(
