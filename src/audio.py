@@ -8,7 +8,7 @@ class AudioManager:
     def __init__(self):
         self.enabled = False
         self.sounds = {}
-        self.music_path = os.path.join(ASSETS_DIR, "audio", "background.ogg")
+        self.music_path = os.path.join(ASSETS_DIR, "audio", "background.mp3")
 
         try:
             if not pygame.mixer.get_init():
@@ -22,10 +22,10 @@ class AudioManager:
 
     def _load_sounds(self):
         sound_files = {
-            "dot": "eat_dot.wav",
-            "death": "death.wav",
-            "game_over": "game_over.wav",
-            "level_complete": "level_complete.wav",
+            "dot": "eat_dot.mp3",
+            "death": "death.mp3",
+            "game_over": "game_over.mp3",
+            "level_complete": "level_complete.mp3",
         }
 
         for name, filename in sound_files.items():
