@@ -1,5 +1,5 @@
 import pygame
-from src.settings import SCALED_TILE, SCALED_SPRITE, PLAYER_SPAWN, COLS
+from src.settings import SCALED_TILE, SCALED_SPRITE, PLAYER_SPAWN, COLS, ROWS
 
 DIRECTION_VECTORS = {
     "up": (0, -1),
@@ -64,10 +64,16 @@ class Player:
         self.pixel_y = float(self.grid_y * SCALED_TILE)
 
     def _can_move_from_tile(self, grid_x, grid_y, direction, game_map):
-        if direction not in DIRECTION_VECTORS:
-            return False
-        dx, dy = DIRECTION_VECTORS[direction]
-        return not game_map.is_wall(grid_x + dx, grid_y + dy)
+            if direction not in DIRECTION_VECTORS:
+                return False
+            dx, dy = DIRECTION_VECTORS[direction]
+            
+            target_x = grid_x + dx
+            target_y = grid_y + dy
+            if target_x < 0 or target_x >= COLS or target_y < 0 or target_y >= ROWS:
+                return True
+                
+            return not game_map.is_wall(target_x, target_y)
 
     def _next_tile(self, direction):
         dx, dy = DIRECTION_VECTORS[direction]
@@ -122,13 +128,26 @@ class Player:
                 self._snap_to_center()
 
     def _wrap_tunnel(self):
-        world_width = COLS * SCALED_TILE
-        if self.pixel_x < -SCALED_TILE:
-            self.pixel_x += world_width
-            self.grid_x = int(round(self.pixel_x / SCALED_TILE))
-        elif self.pixel_x >= world_width:
-            self.pixel_x -= world_width
-            self.grid_x = int(round(self.pixel_x / SCALED_TILE))
+            world_width = COLS * SCALED_TILE
+            world_height = ROWS * SCALED_TILE
+
+            # levo - desno teleportacija
+            if self.pixel_x < -SCALED_TILE // 2:
+                self.pixel_x += world_width
+                self.grid_x = COLS - 1
+
+            elif self.pixel_x >= world_width - SCALED_TILE // 2:
+                self.pixel_x -= world_width
+                self.grid_x = 0
+
+            # zgoraj - spodaj teleportacija
+            if self.pixel_y < -SCALED_TILE // 2:
+                self.pixel_y += world_height
+                self.grid_y = ROWS - 1
+
+            elif self.pixel_y >= world_height - SCALED_TILE // 2:
+                self.pixel_y -= world_height
+                self.grid_y = 0
 
     def _update_animation(self, dt):
         if not self.moving:
