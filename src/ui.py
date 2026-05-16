@@ -1,5 +1,5 @@
 import pygame
-from src.settings import SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, YELLOW, BLACK
+from src.settings import SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, YELLOW, BLACK, BLUE
 
 BLUE_FRAME = (0, 0, 255) 
 BLACK = (0, 0, 0)
@@ -64,16 +64,29 @@ class UI:
         self.screen.blit(lives_surf, (SCREEN_WIDTH - 200, y_poz))
 
     def draw_game_over(self, score):
-        self.screen.fill(BLACK)
-        over_text = self.font_large.render("GAME OVER", True, (255, 0, 0))
-        over_rect = over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
-        
-        score_text = self.font_small.render(f"FINAL SCORE: {score}", True, WHITE)
-        score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40))
-        
-        self.screen.blit(over_text, over_rect)
-        self.screen.blit(score_text, score_rect)
-    
+            YELLOW = (255, 255, 0)
+
+            game_over_text = self.font_large.render("GAME OVER", True, (255, 49, 49))
+            go_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
+            self.screen.blit(game_over_text, go_rect)
+
+            score_text = self.font_small.render(f"FINAL SCORE: {score}", True, WHITE)
+            score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 20))
+            self.screen.blit(score_text, score_rect)
+
+            restart_text = self.font_small.render("RESTART", True, YELLOW)
+            
+            button_rect = pygame.Rect(0, 0, 180, 45)
+            button_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
+            
+            pygame.draw.rect(self.screen, BLACK, button_rect, border_radius=5)
+            pygame.draw.rect(self.screen, BLUE, button_rect, width=3, border_radius=5)
+            
+            text_rect = restart_text.get_rect(center=button_rect.center)
+            self.screen.blit(restart_text, text_rect)
+
+            return button_rect
+
     def draw_pause(self):        
         self.screen.fill(BLACK)
 
