@@ -63,9 +63,34 @@ class UI:
         level_rect = level_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 20))
         self.screen.blit(level_text, level_rect)
 
-        menu_rect = self.draw_button("MAIN MENU", SCREEN_HEIGHT // 2 + 50)
+        if current_level < 3:
+            text_surf1 = self.font_small.render("NEXT LEVEL", True, YELLOW)
+            next_rect = pygame.Rect(0, 0, 220, 45)
+            next_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40)
+            
+            pygame.draw.rect(self.screen, BLACK, next_rect, border_radius=5)
+            pygame.draw.rect(self.screen, BLUE, next_rect, width=3, border_radius=5)
+            self.screen.blit(text_surf1, text_surf1.get_rect(center=next_rect.center))
 
-        return menu_rect
+            text_surf2 = self.font_small.render("MAIN MENU", True, YELLOW)
+            menu_rect = pygame.Rect(0, 0, 220, 45)
+            menu_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100)
+            
+            pygame.draw.rect(self.screen, BLACK, menu_rect, border_radius=5)
+            pygame.draw.rect(self.screen, BLUE, menu_rect, width=3, border_radius=5)
+            self.screen.blit(text_surf2, text_surf2.get_rect(center=menu_rect.center))
+
+            return next_rect, menu_rect
+        else:
+            text_surf2 = self.font_small.render("MAIN MENU", True, YELLOW)
+            menu_rect = pygame.Rect(0, 0, 220, 45)
+            menu_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40)
+            
+            pygame.draw.rect(self.screen, BLACK, menu_rect, border_radius=5)
+            pygame.draw.rect(self.screen, BLUE, menu_rect, width=3, border_radius=5)
+            self.screen.blit(text_surf2, text_surf2.get_rect(center=menu_rect.center))
+            
+            return None, menu_rect
 
     def draw_hud(self, score, lives):
         y_poz = 20 

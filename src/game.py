@@ -177,14 +177,25 @@ class Game:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     mouse_pos = event.pos
+
+                    if self.buttons.get("next_level") and self.buttons["next_level"].collidepoint(mouse_pos):
+                        self.current_level += 1
+                        self.lives = PLAYER_LIVES
+                        self.load_level(self.current_level)
+                        self.state = GameState.PLAYING
+
                     if self.buttons.get("victory_menu") and self.buttons["victory_menu"].collidepoint(mouse_pos):
                         self.state = GameState.MENU
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
-                    self.current_level += 1
-                    self.load_level(self.current_level)
-                    self.state = GameState.PLAYING
+                    if self.current_level < 3:
+                        self.current_level += 1
+                        self.lives = PLAYER_LIVES
+                        self.load_level(self.current_level)
+                        self.state = GameState.PLAYING
+                    else:
+                        self.state = GameState.MENU
                 elif event.key == pygame.K_ESCAPE:
                     self.state = GameState.MENU
 
@@ -266,7 +277,8 @@ class Game:
                     self.buttons["main_menu"] = menu_rect
                 
             elif self.state == GameState.LEVEL_COMPLETE:
-                menu_rect = self.ui.draw_level_complete(self.current_level)
+                next_rect, menu_rect = self.ui.draw_level_complete(self.current_level)
+                self.buttons["next_level"] = next_rect
                 self.buttons["victory_menu"] = menu_rect
 
             elif self.state == GameState.GAME_OVER:
