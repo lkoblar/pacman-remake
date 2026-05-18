@@ -34,6 +34,7 @@ class GameState(Enum):
     PAUSED = auto()
     GAME_OVER = auto()
     LEVEL_COMPLETE = auto()
+    LEVEL_SELECT = auto()
 
 WALL = "#"
 DOT = "."

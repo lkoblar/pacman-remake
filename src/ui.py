@@ -23,6 +23,20 @@ class UI:
         exit_rect = self.draw_button("EXIT", 450)
         
         return play_rect, levels_rect, exit_rect
+    
+    def draw_levels_menu(self):
+        self.screen.fill(BLACK)
+        
+        title = self.font_large.render("SELECT LEVEL", True, YELLOW)
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
+        self.screen.blit(title, title_rect)
+        
+        lvl1_rect = self.draw_button("LEVEL 1", 220)
+        lvl2_rect = self.draw_button("LEVEL 2", 300)
+        lvl3_rect = self.draw_button("LEVEL 3", 380)
+        back_rect = self.draw_button("BACK", 500)
+        
+        return lvl1_rect, lvl2_rect, lvl3_rect, back_rect
 
     def draw_button(self, text, center_y):
         text_surf = self.font_small.render(text, True, YELLOW)
