@@ -34,6 +34,7 @@ class GameState(Enum):
     PAUSED = auto()
     GAME_OVER = auto()
     LEVEL_COMPLETE = auto()
+    LEVEL_SELECT = auto()
 
 WALL = "#"
 DOT = "."
@@ -43,5 +44,5 @@ GHOST_SPAWN = "G"
 PLAYER_SPAWN = "P"
 
 PLAYER_LIVES = 3
-
+TOTAL_LEVELS = 3
 FRIGHTENED_DURATION = 7.0
