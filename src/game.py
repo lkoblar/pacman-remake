@@ -270,6 +270,9 @@ class Game:
 
                     continue
 
+                if ghost.respawn_freeze_timer > 0:
+                    continue
+
                 self.lives -= 1
 
                 if self.lives <= 0:

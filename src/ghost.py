@@ -12,6 +12,7 @@ DIRECTION_VECTORS = {
 
 CENTER_EPSILON = 0.5
 HALF_OFFSET = (SCALED_SPRITE - SCALED_TILE) // 2
+RESPAWN_FREEZE_DURATION = 0.75
 
 
 class Ghost:
@@ -37,6 +38,7 @@ class Ghost:
         self.is_frightened = False
         self.flash_white = False
         self.ignore_frightened = False
+        self.respawn_freeze_timer = 0.0
 
         self.direction = random.choice(list(DIRECTION_VECTORS.keys()))
 
@@ -65,6 +67,7 @@ class Ghost:
         self.is_frightened = False
         self.flash_white = False
         self.ignore_frightened = False
+        self.respawn_freeze_timer = 0.0
 
     def send_to_spawn(self):
         self.grid_x = self.spawn_x
@@ -75,6 +78,7 @@ class Ghost:
         self.is_frightened = False
         self.flash_white = False
         self.ignore_frightened = True
+        self.respawn_freeze_timer = RESPAWN_FREEZE_DURATION
 
     def allow_frightened_again(self):
         self.ignore_frightened = False
@@ -211,6 +215,10 @@ class Ghost:
         self.is_frightened = active_frightened
         self.flash_white = flash if active_frightened else False
         self.speed = self.frightened_speed if active_frightened else self.normal_speed
+
+        if self.respawn_freeze_timer > 0:
+            self.respawn_freeze_timer = max(0.0, self.respawn_freeze_timer - dt)
+            return
 
         remaining = self.speed * dt
 
