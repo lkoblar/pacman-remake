@@ -49,7 +49,14 @@ class Ghost:
 
     def reset_position(self):
         self.grid_x = self.spawn_x
-        self.spawn_y = self.spawn_y
+        self.grid_y = self.spawn_y
+        self.pixel_x = float(self.grid_x * SCALED_TILE)
+        self.pixel_y = float(self.grid_y * SCALED_TILE)
+        self.direction = random.choice(list(DIRECTION_VECTORS.keys()))
+
+    def send_to_spawn(self, grid_x, grid_y):
+        self.grid_x = grid_x
+        self.grid_y = grid_y
         self.pixel_x = float(self.grid_x * SCALED_TILE)
         self.pixel_y = float(self.grid_y * SCALED_TILE)
         self.direction = random.choice(list(DIRECTION_VECTORS.keys()))

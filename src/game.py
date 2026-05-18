@@ -37,6 +37,9 @@ class Game:
 
         self.frightened_timer = 0.0
 
+        self.ghost_eat_score = 200
+        self.eaten_ghosts = set()
+
         self.buttons = {}
 
         self.audio = AudioManager()
@@ -55,6 +58,8 @@ class Game:
         self.ghosts = Ghost.create_from_map(self.game_map, self.sprite_loader)
         self.food_manager = FoodManager(self.game_map, self.sprite_loader)
         self.frightened_timer = 0.0
+        self.ghost_eat_score = 200
+        self.eaten_ghosts.clear()
 
     def start_game(self):
             self.score = 0
@@ -222,6 +227,8 @@ class Game:
 
             if super_dots > 0:
                 self.frightened_timer = FRIGHTENED_DURATION
+                self.ghost_eat_score = 200
+                self.eaten_ghosts.clear()
 
             if self.food_manager.all_collected():
                 self.state = GameState.LEVEL_COMPLETE
@@ -231,6 +238,18 @@ class Game:
 
         for ghost in self.ghosts:
             if ghost.check_collision(self.player):
+                if self.frightened_active:
+                    ghost_id = id(ghost)
+
+                    if ghost_id not in self.eaten_ghosts:
+                        self.score += self.ghost_eat_score
+                        self.eaten_ghosts.add(ghost_id)
+                        self.ghost_eat_score = min(self.ghost_eat_score * 2, 1600)
+                        spawn_x, spawn_y = self.ghosts[2].spawn_x, self.ghosts[2].spawn_y
+                        ghost.send_to_spawn(spawn_x, spawn_y)
+
+                    continue
+
                 self.lives -= 1
 
                 if self.lives <= 0:
