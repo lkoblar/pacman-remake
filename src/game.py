@@ -2,7 +2,7 @@ import os
 import pygame
 from src.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BLACK,
-    GameState, LEVELS_DIR, PLAYER_LIVES,
+    GameState, LEVELS_DIR, PLAYER_LIVES, FRIGHTENED_DURATION,
 )
 from src.sprite_loader import SpriteLoader
 from src.map import Map
@@ -33,10 +33,16 @@ class Game:
         self.player = None
         self.ghosts = []
         self.food_manager = None
-        
+
+        self.frightened_timer = 0.0
+
         self.buttons = {}
 
         self.audio = AudioManager()
+
+    @property
+    def frightened_active(self):
+        return self.frightened_timer > 0
 
     def load_level(self, level_num):
         level_path = os.path.join(LEVELS_DIR, f"level{level_num}.txt")
@@ -47,6 +53,7 @@ class Game:
         self.player = Player(self.game_map, self.sprite_loader)
         self.ghosts = Ghost.create_from_map(self.game_map, self.sprite_loader)
         self.food_manager = FoodManager(self.game_map, self.sprite_loader)
+        self.frightened_timer = 0.0
 
     def start_game(self):
         self.score = 0
@@ -152,15 +159,21 @@ class Game:
             ghost.update(dt, self.game_map, self.player)
 
         if self.food_manager and self.player:
-            points = self.food_manager.check_collisions(self.player)
+            points, super_dots = self.food_manager.check_collisions(self.player)
 
             if points > 0:
                 self.audio.play_sound("dot")
 
             self.score += points
 
+            if super_dots > 0:
+                self.frightened_timer = FRIGHTENED_DURATION
+
             if self.food_manager.all_collected():
                 self.state = GameState.LEVEL_COMPLETE
+
+        if self.frightened_timer > 0:
+            self.frightened_timer = max(0.0, self.frightened_timer - dt)
 
         for ghost in self.ghosts:
             if ghost.check_collision(self.player):

@@ -54,7 +54,8 @@ class FoodManager:
 
         # sestevamo tocke
         points = sum(dot.points for dot in eaten_dots)
-        return points
+        super_dots_eaten = sum(1 for dot in eaten_dots if isinstance(dot, SuperDot))
+        return points, super_dots_eaten
 
     def all_collected(self):
         # preverja ce smo vse pojedli
