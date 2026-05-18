@@ -25,12 +25,14 @@ class Ghost:
         self.pixel_y = float(grid_y * SCALED_TILE)
 
         self.sprite = sprite
+        self.frightened_sprite = pygame.transform.scale(pygame.image.load("assets/ghosts/blue_ghost.png").convert_alpha(),(SCALED_SPRITE, SCALED_SPRITE),)        
         self.speed = SCALED_TILE * 3
         self.normal_speed = SCALED_TILE * 3
         self.frightened_speed = SCALED_TILE * 1.5
         self.is_frightened = False
         self.flash_white = False
         self.direction = random.choice(list(DIRECTION_VECTORS.keys()))
+        
 
     @classmethod
     def create_from_map(cls, game_map, sprite_loader):
@@ -251,12 +253,12 @@ class Ghost:
         draw_x = int(self.pixel_x) - HALF_OFFSET
         draw_y = int(self.pixel_y) - HALF_OFFSET
 
-        if self.is_frightened and self.sprite:
-            frightened_sprite = self.sprite.copy()
+        if self.is_frightened and self.frightened_sprite:
+            frightened_sprite = self.frightened_sprite.copy()
 
-            color = WHITE if self.flash_white else BLUE
+            if self.flash_white:
+                frightened_sprite.fill(WHITE, special_flags=pygame.BLEND_ADD)
 
-            frightened_sprite.fill(color, special_flags=pygame.BLEND_MULT)
             surface.blit(frightened_sprite, (draw_x, draw_y))
         elif self.is_frightened:
             pygame.draw.rect(
