@@ -117,6 +117,35 @@ class Ghost:
 
         self.direction = random.choice(choices)
 
+    def _choose_frightened_direction(self, game_map, player):
+        if not player:
+            self._choose_direction(game_map)
+            return
+
+        valid = self._valid_directions(game_map)
+        if not valid:
+            return
+
+        opposites = {
+            "up": "down",
+            "down": "up",
+            "left": "right",
+            "right": "left",
+        }
+
+        reverse = opposites[self.direction]
+        choices = [d for d in valid if d != reverse] or valid
+
+        player_rect = player.get_rect()
+        player_grid_x = player_rect.centerx // SCALED_TILE
+        player_grid_y = player_rect.centery // SCALED_TILE
+
+        def distance_after_move(direction):
+            next_x, next_y = self._next_tile(direction)
+            return abs(next_x - player_grid_x) + abs(next_y - player_grid_y)
+
+        self.direction = max(choices, key=distance_after_move)
+
     def _distance_to_next_center(self):
         dx, dy = DIRECTION_VECTORS[self.direction]
         if dx > 0:
@@ -160,13 +189,19 @@ class Ghost:
         if self._at_tile_center():
             self._snap_to_center()
             if not self._can_move_from_tile(self.grid_x, self.grid_y, self.direction, game_map):
-                self._choose_direction(game_map)
+                if self.is_frightened:
+                    self._choose_frightened_direction(game_map, player)
+                else:
+                    self._choose_direction(game_map)
 
         while remaining > 0:
             if self._at_tile_center():
                 self._snap_to_center()
                 if not self._can_move_from_tile(self.grid_x, self.grid_y, self.direction, game_map):
-                    self._choose_direction(game_map)
+                    if self.is_frightened:
+                        self._choose_frightened_direction(game_map, player)
+                    else:
+                        self._choose_direction(game_map)
                     if not self._can_move_from_tile(self.grid_x, self.grid_y, self.direction, game_map):
                         return
 
@@ -185,7 +220,10 @@ class Ghost:
                 if 0 <= self.grid_x < COLS and 0 <= self.grid_y < ROWS:
                     valid = self._valid_directions(game_map)
                     if len(valid) >= 3:
-                        self._choose_direction(game_map)
+                        if self.is_frightened:
+                            self._choose_frightened_direction(game_map, player)
+                        else:
+                            self._choose_direction(game_map)
 
         self._wrap_tunnel()
 
