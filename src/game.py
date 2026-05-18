@@ -3,6 +3,7 @@ import pygame
 from src.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BLACK,
     GameState, LEVELS_DIR, PLAYER_LIVES, FRIGHTENED_DURATION,
+    TOTAL_LEVELS,
 )
 from src.sprite_loader import SpriteLoader
 from src.map import Map
@@ -189,7 +190,7 @@ class Game:
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
-                    if self.current_level < 3:
+                    if self.current_level < TOTAL_LEVELS:
                         self.current_level += 1
                         self.lives = PLAYER_LIVES
                         self.load_level(self.current_level)

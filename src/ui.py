@@ -1,5 +1,5 @@
 import pygame
-from src.settings import SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, YELLOW, BLACK, BLUE
+from src.settings import SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, YELLOW, BLACK, BLUE, TOTAL_LEVELS
 
 BLUE_FRAME = (0, 0, 255) 
 BLACK = (0, 0, 0)
@@ -63,7 +63,7 @@ class UI:
         level_rect = level_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 20))
         self.screen.blit(level_text, level_rect)
 
-        if current_level < 3:
+        if current_level < TOTAL_LEVELS:
             score_label = f"CURRENT SCORE: {score}"
         else:
             score_label = f"FINAL SCORE: {score}"
@@ -72,7 +72,7 @@ class UI:
         score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 15))
         self.screen.blit(score_text, score_rect)
 
-        if current_level < 3:
+        if current_level < TOTAL_LEVELS:
             text_surf1 = self.font_small.render("NEXT LEVEL", True, YELLOW)
             next_rect = pygame.Rect(0, 0, 220, 45)
             next_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 70)
