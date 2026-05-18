@@ -26,33 +26,32 @@ class UI:
 
     def draw_button(self, text, center_y):
         text_surf = self.font_small.render(text, True, YELLOW)
-        text_rect = text_surf.get_rect(center=(SCREEN_WIDTH // 2, center_y))
         
-        padding_x, padding_y = 20, 10
-        button_rect = pygame.Rect(
-            text_rect.left - padding_x, 
-            text_rect.top - padding_y, 
-            text_rect.width + (padding_x * 2), 
-            text_rect.height + (padding_y * 2)
-        )
+        button_rect = pygame.Rect(0, 0, 180, 45)
+        button_rect.center = (SCREEN_WIDTH // 2, center_y)
         
-        pygame.draw.rect(self.screen, (0, 0, 255), button_rect, 3)
+        pygame.draw.rect(self.screen, BLACK, button_rect, border_radius=5)
+        pygame.draw.rect(self.screen, BLUE, button_rect, width=3, border_radius=5)
+        
+        text_rect = text_surf.get_rect(center=button_rect.center)
         self.screen.blit(text_surf, text_rect)
         
         return button_rect
 
-    def draw_level_complete(self, level=None):
-        self.screen.fill(BLACK)
-        
-        title = self.font_large.render("Victory!", True, YELLOW)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 200))
-        self.screen.blit(title, title_rect)
-        
-        self.draw_button("NEXT LEVEL", 300)
-        
-        menu_text = self.font_small.render("MAIN MENU", True, YELLOW)
-        menu_rect = menu_text.get_rect(center=(SCREEN_WIDTH // 2, 500))
-        self.screen.blit(menu_text, menu_rect)
+    def draw_level_complete(self, current_level):
+        YELLOW = (255, 255, 0)
+
+        victory_text = self.font_large.render("VICTORY!", True, YELLOW)
+        vic_rect = victory_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
+        self.screen.blit(victory_text, vic_rect)
+
+        level_text = self.font_small.render(f"LEVEL {current_level} COMPLETED", True, WHITE)
+        level_rect = level_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 20))
+        self.screen.blit(level_text, level_rect)
+
+        menu_rect = self.draw_button("MAIN MENU", SCREEN_HEIGHT // 2 + 50)
+
+        return menu_rect
 
     def draw_hud(self, score, lives):
         y_poz = 20 
@@ -64,28 +63,19 @@ class UI:
         self.screen.blit(lives_surf, (SCREEN_WIDTH - 200, y_poz))
 
     def draw_game_over(self, score):
-            YELLOW = (255, 255, 0)
+        YELLOW = (255, 255, 0)
 
-            game_over_text = self.font_large.render("GAME OVER", True, (255, 49, 49))
-            go_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
-            self.screen.blit(game_over_text, go_rect)
+        game_over_text = self.font_large.render("GAME OVER", True, (255, 49, 49))
+        go_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
+        self.screen.blit(game_over_text, go_rect)
 
-            score_text = self.font_small.render(f"FINAL SCORE: {score}", True, WHITE)
-            score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 20))
-            self.screen.blit(score_text, score_rect)
+        score_text = self.font_small.render(f"FINAL SCORE: {score}", True, WHITE)
+        score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 20))
+        self.screen.blit(score_text, score_rect)
 
-            restart_text = self.font_small.render("RESTART", True, YELLOW)
-            
-            button_rect = pygame.Rect(0, 0, 180, 45)
-            button_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
-            
-            pygame.draw.rect(self.screen, BLACK, button_rect, border_radius=5)
-            pygame.draw.rect(self.screen, BLUE, button_rect, width=3, border_radius=5)
-            
-            text_rect = restart_text.get_rect(center=button_rect.center)
-            self.screen.blit(restart_text, text_rect)
+        restart_rect = self.draw_button("RESTART", SCREEN_HEIGHT // 2 + 50)
 
-            return button_rect
+        return restart_rect
 
     def draw_pause(self):        
         self.screen.fill(BLACK)
