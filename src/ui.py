@@ -52,7 +52,7 @@ class UI:
         
         return button_rect
 
-    def draw_level_complete(self, current_level):
+    def draw_level_complete(self, current_level, score):
         YELLOW = (255, 255, 0)
 
         victory_text = self.font_large.render("VICTORY!", True, YELLOW)
@@ -64,9 +64,18 @@ class UI:
         self.screen.blit(level_text, level_rect)
 
         if current_level < 3:
+            score_label = f"CURRENT SCORE: {score}"
+        else:
+            score_label = f"FINAL SCORE: {score}"
+
+        score_text = self.font_small.render(score_label, True, WHITE)
+        score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 15))
+        self.screen.blit(score_text, score_rect)
+
+        if current_level < 3:
             text_surf1 = self.font_small.render("NEXT LEVEL", True, YELLOW)
             next_rect = pygame.Rect(0, 0, 220, 45)
-            next_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40)
+            next_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 70)
             
             pygame.draw.rect(self.screen, BLACK, next_rect, border_radius=5)
             pygame.draw.rect(self.screen, BLUE, next_rect, width=3, border_radius=5)
@@ -74,7 +83,7 @@ class UI:
 
             text_surf2 = self.font_small.render("MAIN MENU", True, YELLOW)
             menu_rect = pygame.Rect(0, 0, 220, 45)
-            menu_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100)
+            menu_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130)
             
             pygame.draw.rect(self.screen, BLACK, menu_rect, border_radius=5)
             pygame.draw.rect(self.screen, BLUE, menu_rect, width=3, border_radius=5)
@@ -84,7 +93,7 @@ class UI:
         else:
             text_surf2 = self.font_small.render("MAIN MENU", True, YELLOW)
             menu_rect = pygame.Rect(0, 0, 220, 45)
-            menu_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40)
+            menu_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 70)
             
             pygame.draw.rect(self.screen, BLACK, menu_rect, border_radius=5)
             pygame.draw.rect(self.screen, BLUE, menu_rect, width=3, border_radius=5)

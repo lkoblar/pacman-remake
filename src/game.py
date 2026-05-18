@@ -277,7 +277,7 @@ class Game:
                     self.buttons["main_menu"] = menu_rect
                 
             elif self.state == GameState.LEVEL_COMPLETE:
-                next_rect, menu_rect = self.ui.draw_level_complete(self.current_level)
+                next_rect, menu_rect = self.ui.draw_level_complete(self.current_level, self.score)
                 self.buttons["next_level"] = next_rect
                 self.buttons["victory_menu"] = menu_rect
 
