@@ -3,7 +3,7 @@ import pygame
 from src.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BLACK,
     GameState, LEVELS_DIR, PLAYER_LIVES, FRIGHTENED_DURATION,
-    TOTAL_LEVELS,
+    TOTAL_LEVELS, FRIGHTENED_FLASH_TIME
 )
 from src.sprite_loader import SpriteLoader
 from src.map import Map
@@ -214,8 +214,20 @@ class Game:
             self.player.handle_input(keys)
             self.player.update(dt, self.game_map)
 
+        flash = (
+            self.frightened_active
+            and self.frightened_timer <= FRIGHTENED_FLASH_TIME
+            and int(self.frightened_timer * 6) % 2 == 0
+        )
+
         for ghost in self.ghosts:
-            ghost.update(dt, self.game_map, self.player, self.frightened_active)
+            ghost.update(
+                dt,
+                self.game_map,
+                self.player,
+                self.frightened_active,
+                flash,
+            )
 
         if self.food_manager and self.player:
             points, super_dots = self.food_manager.check_collisions(self.player)
