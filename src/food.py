@@ -48,11 +48,10 @@ class FoodManager:
                     self.food_group.add(SuperDot(col_idx, row_idx, super_dot_sprite))
 
     def check_collisions(self, player):
-        if not hasattr(player, 'rect'):
-            player.rect = player.get_rect()
+        player.rect = player.get_rect()
         # spritecollide zbrise piko ce se je player dotakne (iz skupine)
         eaten_dots = pygame.sprite.spritecollide(player, self.food_group, True)
-        
+
         # sestevamo tocke
         points = sum(dot.points for dot in eaten_dots)
         return points
