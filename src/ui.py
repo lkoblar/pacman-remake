@@ -41,7 +41,7 @@ class UI:
         
         return button_rect
 
-    def draw_level_complete(self):
+    def draw_level_complete(self, level=None):
         self.screen.fill(BLACK)
         
         title = self.font_large.render("Victory!", True, YELLOW)
