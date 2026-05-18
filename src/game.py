@@ -210,7 +210,7 @@ class Game:
             self.player.update(dt, self.game_map)
 
         for ghost in self.ghosts:
-            ghost.update(dt, self.game_map, self.player)
+            ghost.update(dt, self.game_map, self.player, self.frightened_active)
 
         if self.food_manager and self.player:
             points, super_dots = self.food_manager.check_collisions(self.player)

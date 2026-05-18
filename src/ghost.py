@@ -1,7 +1,7 @@
 import random
 import pygame
 
-from src.settings import GHOST_SPAWN, SCALED_TILE, SCALED_SPRITE, COLS, ROWS
+from src.settings import GHOST_SPAWN, SCALED_TILE, SCALED_SPRITE, COLS, ROWS, BLUE
 
 DIRECTION_VECTORS = {
     "up": (0, -1),
@@ -26,6 +26,9 @@ class Ghost:
 
         self.sprite = sprite
         self.speed = SCALED_TILE * 3
+        self.normal_speed = SCALED_TILE * 3
+        self.frightened_speed = SCALED_TILE * 1.5
+        self.is_frightened = False
         self.direction = random.choice(list(DIRECTION_VECTORS.keys()))
 
     @classmethod
@@ -149,7 +152,9 @@ class Ghost:
             self.pixel_y -= world_height
             self.grid_y = 0
 
-    def update(self, dt, game_map, player=None):
+    def update(self, dt, game_map, player=None, frightened=False):
+        self.is_frightened = frightened
+        self.speed = self.frightened_speed if frightened else self.normal_speed
         remaining = self.speed * dt
 
         if self._at_tile_center():
@@ -199,7 +204,17 @@ class Ghost:
         draw_x = int(self.pixel_x) - HALF_OFFSET
         draw_y = int(self.pixel_y) - HALF_OFFSET
 
-        if self.sprite:
+        if self.is_frightened and self.sprite:
+            frightened_sprite = self.sprite.copy()
+            frightened_sprite.fill(BLUE, special_flags=pygame.BLEND_MULT)
+            surface.blit(frightened_sprite, (draw_x, draw_y))
+        elif self.is_frightened:
+            pygame.draw.rect(
+                surface,
+                BLUE,
+                (int(self.pixel_x), int(self.pixel_y), SCALED_TILE, SCALED_TILE),
+            )
+        elif self.sprite:
             surface.blit(self.sprite, (draw_x, draw_y))
         else:
             pygame.draw.rect(
