@@ -1,9 +1,17 @@
 import os
 import pygame
+
 from src.settings import (
-    SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BLACK,
-    GameState, LEVELS_DIR, PLAYER_LIVES, FRIGHTENED_DURATION,
-    TOTAL_LEVELS, FRIGHTENED_FLASH_TIME
+    SCREEN_WIDTH,
+    SCREEN_HEIGHT,
+    FPS,
+    BLACK,
+    GameState,
+    LEVELS_DIR,
+    PLAYER_LIVES,
+    FRIGHTENED_DURATION,
+    TOTAL_LEVELS,
+    FRIGHTENED_FLASH_TIME,
 )
 from src.sprite_loader import SpriteLoader
 from src.map import Map
@@ -12,6 +20,7 @@ from src.ghost import Ghost
 from src.food import FoodManager
 from src.ui import UI
 from src.audio import AudioManager
+
 
 class Game:
     def __init__(self):
@@ -36,12 +45,10 @@ class Game:
         self.food_manager = None
 
         self.frightened_timer = 0.0
-
         self.ghost_eat_score = 200
         self.eaten_ghosts = set()
 
         self.buttons = {}
-
         self.audio = AudioManager()
 
     @property
@@ -62,12 +69,12 @@ class Game:
         self.eaten_ghosts.clear()
 
     def start_game(self):
-            self.score = 0
-            self.lives = PLAYER_LIVES
-            self.current_level = 1
-            self.load_level(self.current_level)
-            self.state = GameState.PLAYING
-            self.audio.play_music()
+        self.score = 0
+        self.lives = PLAYER_LIVES
+        self.current_level = 1
+        self.load_level(self.current_level)
+        self.state = GameState.PLAYING
+        self.audio.play_music()
 
     def select_level(self, level_num):
         self.score = 0
@@ -83,6 +90,7 @@ class Game:
             self.handle_events()
             self.update(dt)
             self.render()
+
         pygame.quit()
 
     def handle_events(self):
@@ -100,7 +108,7 @@ class Game:
                         self.state = GameState.LEVEL_SELECT
                     elif self.buttons.get("exit") and self.buttons["exit"].collidepoint(mouse_pos):
                         self.running = False
-                
+
                 elif self.state == GameState.LEVEL_SELECT:
                     if self.buttons.get("lvl1") and self.buttons["lvl1"].collidepoint(mouse_pos):
                         self.select_level(1)
@@ -157,53 +165,52 @@ class Game:
                 self.audio.play_music()
 
     def _handle_game_over_events(self, event):
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    mouse_pos = event.pos
-                    if self.buttons.get("restart") and self.buttons["restart"].collidepoint(mouse_pos):
-                        self.score = 0
-                        self.lives = PLAYER_LIVES
-                        self.load_level(self.current_level)
-                        self.state = GameState.PLAYING
-                        self.audio.play_music()
-
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                mouse_pos = event.pos
+                if self.buttons.get("restart") and self.buttons["restart"].collidepoint(mouse_pos):
                     self.score = 0
                     self.lives = PLAYER_LIVES
                     self.load_level(self.current_level)
                     self.state = GameState.PLAYING
                     self.audio.play_music()
-                    
-                elif event.key == pygame.K_ESCAPE:
-                    self.audio.stop_music()
-                    self.state = GameState.MENU
+
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                self.score = 0
+                self.lives = PLAYER_LIVES
+                self.load_level(self.current_level)
+                self.state = GameState.PLAYING
+                self.audio.play_music()
+            elif event.key == pygame.K_ESCAPE:
+                self.audio.stop_music()
+                self.state = GameState.MENU
 
     def _handle_level_complete_events(self, event):
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    mouse_pos = event.pos
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                mouse_pos = event.pos
 
-                    if self.buttons.get("next_level") and self.buttons["next_level"].collidepoint(mouse_pos):
-                        self.current_level += 1
-                        self.lives = PLAYER_LIVES
-                        self.load_level(self.current_level)
-                        self.state = GameState.PLAYING
+                if self.buttons.get("next_level") and self.buttons["next_level"].collidepoint(mouse_pos):
+                    self.current_level += 1
+                    self.lives = PLAYER_LIVES
+                    self.load_level(self.current_level)
+                    self.state = GameState.PLAYING
 
-                    if self.buttons.get("victory_menu") and self.buttons["victory_menu"].collidepoint(mouse_pos):
-                        self.state = GameState.MENU
-
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    if self.current_level < TOTAL_LEVELS:
-                        self.current_level += 1
-                        self.lives = PLAYER_LIVES
-                        self.load_level(self.current_level)
-                        self.state = GameState.PLAYING
-                    else:
-                        self.state = GameState.MENU
-                elif event.key == pygame.K_ESCAPE:
+                if self.buttons.get("victory_menu") and self.buttons["victory_menu"].collidepoint(mouse_pos):
                     self.state = GameState.MENU
+
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                if self.current_level < TOTAL_LEVELS:
+                    self.current_level += 1
+                    self.lives = PLAYER_LIVES
+                    self.load_level(self.current_level)
+                    self.state = GameState.PLAYING
+                else:
+                    self.state = GameState.MENU
+            elif event.key == pygame.K_ESCAPE:
+                self.state = GameState.MENU
 
     def update(self, dt):
         if self.state != GameState.PLAYING:
@@ -241,6 +248,8 @@ class Game:
                 self.frightened_timer = FRIGHTENED_DURATION
                 self.ghost_eat_score = 200
                 self.eaten_ghosts.clear()
+                for ghost in self.ghosts:
+                    ghost.allow_frightened_again()
 
             if self.food_manager.all_collected():
                 self.state = GameState.LEVEL_COMPLETE
@@ -250,15 +259,14 @@ class Game:
 
         for ghost in self.ghosts:
             if ghost.check_collision(self.player):
-                if self.frightened_active:
+                if self.frightened_active and not ghost.ignore_frightened:
                     ghost_id = id(ghost)
 
                     if ghost_id not in self.eaten_ghosts:
                         self.score += self.ghost_eat_score
                         self.eaten_ghosts.add(ghost_id)
                         self.ghost_eat_score = min(self.ghost_eat_score * 2, 1600)
-                        spawn_x, spawn_y = self.ghosts[2].spawn_x, self.ghosts[2].spawn_y
-                        ghost.send_to_spawn(spawn_x, spawn_y)
+                        ghost.send_to_spawn()
 
                     continue
 
@@ -275,46 +283,46 @@ class Game:
                         g.reset_position()
 
     def render(self):
-            self.screen.fill(BLACK)
+        self.screen.fill(BLACK)
 
-            if self.state == GameState.MENU:
-                play_rect, levels_rect, exit_rect = self.ui.draw_menu()
-                self.buttons["play"] = play_rect
-                self.buttons["levels"] = levels_rect
-                self.buttons["exit"] = exit_rect
+        if self.state == GameState.MENU:
+            play_rect, levels_rect, exit_rect = self.ui.draw_menu()
+            self.buttons["play"] = play_rect
+            self.buttons["levels"] = levels_rect
+            self.buttons["exit"] = exit_rect
 
-            elif self.state == GameState.LEVEL_SELECT:
-                l1, l2, l3, b = self.ui.draw_levels_menu()
-                self.buttons["lvl1"] = l1
-                self.buttons["lvl2"] = l2
-                self.buttons["lvl3"] = l3
-                self.buttons["back"] = b
+        elif self.state == GameState.LEVEL_SELECT:
+            l1, l2, l3, b = self.ui.draw_levels_menu()
+            self.buttons["lvl1"] = l1
+            self.buttons["lvl2"] = l2
+            self.buttons["lvl3"] = l3
+            self.buttons["back"] = b
 
-            elif self.state in (GameState.PLAYING, GameState.PAUSED):
-                if self.game_map:
-                    self.game_map.render(self.screen)
-                if self.food_manager:
-                    self.food_manager.render(self.screen)
+        elif self.state in (GameState.PLAYING, GameState.PAUSED):
+            if self.game_map:
+                self.game_map.render(self.screen)
+            if self.food_manager:
+                self.food_manager.render(self.screen)
 
-                for ghost in self.ghosts:
-                    ghost.draw(self.screen)
-                if self.player:
-                    self.player.draw(self.screen)
+            for ghost in self.ghosts:
+                ghost.draw(self.screen)
+            if self.player:
+                self.player.draw(self.screen)
 
-                self.ui.draw_hud(self.score, self.lives)
+            self.ui.draw_hud(self.score, self.lives)
 
-                if self.state == GameState.PAUSED:
-                    resume_rect, menu_rect = self.ui.draw_pause()
-                    self.buttons["resume"] = resume_rect
-                    self.buttons["main_menu"] = menu_rect
-                
-            elif self.state == GameState.LEVEL_COMPLETE:
-                next_rect, menu_rect = self.ui.draw_level_complete(self.current_level, self.score)
-                self.buttons["next_level"] = next_rect
-                self.buttons["victory_menu"] = menu_rect
+            if self.state == GameState.PAUSED:
+                resume_rect, menu_rect = self.ui.draw_pause()
+                self.buttons["resume"] = resume_rect
+                self.buttons["main_menu"] = menu_rect
 
-            elif self.state == GameState.GAME_OVER:
-                restart_rect = self.ui.draw_game_over(self.score)
-                self.buttons["restart"] = restart_rect
+        elif self.state == GameState.LEVEL_COMPLETE:
+            next_rect, menu_rect = self.ui.draw_level_complete(self.current_level, self.score)
+            self.buttons["next_level"] = next_rect
+            self.buttons["victory_menu"] = menu_rect
 
-            pygame.display.flip()
+        elif self.state == GameState.GAME_OVER:
+            restart_rect = self.ui.draw_game_over(self.score)
+            self.buttons["restart"] = restart_rect
+
+        pygame.display.flip()

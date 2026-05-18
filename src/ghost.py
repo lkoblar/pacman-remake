@@ -25,14 +25,20 @@ class Ghost:
         self.pixel_y = float(grid_y * SCALED_TILE)
 
         self.sprite = sprite
-        self.frightened_sprite = pygame.transform.scale(pygame.image.load("assets/ghosts/blue_ghost.png").convert_alpha(),(SCALED_SPRITE, SCALED_SPRITE),)        
+        self.frightened_sprite = pygame.transform.scale(
+            pygame.image.load("assets/ghosts/blue_ghost.png").convert_alpha(),
+            (SCALED_SPRITE, SCALED_SPRITE),
+        )
+
         self.speed = SCALED_TILE * 3
         self.normal_speed = SCALED_TILE * 3
         self.frightened_speed = SCALED_TILE * 1.5
+
         self.is_frightened = False
         self.flash_white = False
+        self.ignore_frightened = False
+
         self.direction = random.choice(list(DIRECTION_VECTORS.keys()))
-        
 
     @classmethod
     def create_from_map(cls, game_map, sprite_loader):
@@ -56,13 +62,22 @@ class Ghost:
         self.pixel_x = float(self.grid_x * SCALED_TILE)
         self.pixel_y = float(self.grid_y * SCALED_TILE)
         self.direction = random.choice(list(DIRECTION_VECTORS.keys()))
+        self.is_frightened = False
+        self.flash_white = False
+        self.ignore_frightened = False
 
-    def send_to_spawn(self, grid_x, grid_y):
-        self.grid_x = grid_x
-        self.grid_y = grid_y
+    def send_to_spawn(self):
+        self.grid_x = self.spawn_x
+        self.grid_y = self.spawn_y
         self.pixel_x = float(self.grid_x * SCALED_TILE)
         self.pixel_y = float(self.grid_y * SCALED_TILE)
         self.direction = random.choice(list(DIRECTION_VECTORS.keys()))
+        self.is_frightened = False
+        self.flash_white = False
+        self.ignore_frightened = True
+
+    def allow_frightened_again(self):
+        self.ignore_frightened = False
 
     def _at_tile_center(self):
         target_x = self.grid_x * SCALED_TILE
@@ -98,7 +113,6 @@ class Ghost:
         return valid
 
     def _choose_direction(self, game_map):
-        
         if self.grid_x < 0 or self.grid_x >= COLS or self.grid_y < 0 or self.grid_y >= ROWS:
             return
 
@@ -112,8 +126,8 @@ class Ghost:
             "left": "right",
             "right": "left",
         }
-        reverse = opposites[self.direction]
 
+        reverse = opposites[self.direction]
         non_reverse = [d for d in valid if d != reverse]
 
         if self.direction in valid and len(valid) == 1:
@@ -192,9 +206,12 @@ class Ghost:
             self.grid_y = 0
 
     def update(self, dt, game_map, player=None, frightened=False, flash=False):
-        self.is_frightened = frightened
-        self.flash_white = flash
-        self.speed = self.frightened_speed if frightened else self.normal_speed
+        active_frightened = frightened and not self.ignore_frightened
+
+        self.is_frightened = active_frightened
+        self.flash_white = flash if active_frightened else False
+        self.speed = self.frightened_speed if active_frightened else self.normal_speed
+
         remaining = self.speed * dt
 
         if self._at_tile_center():
@@ -213,8 +230,9 @@ class Ghost:
                         self._choose_frightened_direction(game_map, player)
                     else:
                         self._choose_direction(game_map)
-                    if not self._can_move_from_tile(self.grid_x, self.grid_y, self.direction, game_map):
-                        return
+
+                if not self._can_move_from_tile(self.grid_x, self.grid_y, self.direction, game_map):
+                    return
 
             distance_to_center = self._distance_to_next_center()
             if distance_to_center <= 0:
@@ -236,7 +254,7 @@ class Ghost:
                         else:
                             self._choose_direction(game_map)
 
-        self._wrap_tunnel()
+            self._wrap_tunnel()
 
     def get_rect(self):
         return pygame.Rect(
