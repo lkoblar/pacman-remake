@@ -1,4 +1,5 @@
 import os
+import time
 import pygame
 
 from src.settings import (
@@ -12,6 +13,9 @@ from src.settings import (
     FRIGHTENED_DURATION,
     TOTAL_LEVELS,
     FRIGHTENED_FLASH_TIME,
+    LIVES_SCORE_MULTIPLIERS,
+    TIME_BONUS_BASE,
+    MAX_TIME_BONUS,
 )
 from src.sprite_loader import SpriteLoader
 from src.map import Map
@@ -48,12 +52,19 @@ class Game:
         self.ghost_eat_score = 200
         self.eaten_ghosts = set()
 
+        self.level_start_time = 0.0
+        self.level_time_bonus = 0
+
         self.buttons = {}
         self.audio = AudioManager()
 
     @property
     def frightened_active(self):
         return self.frightened_timer > 0
+
+    @property
+    def score_multiplier(self):
+        return LIVES_SCORE_MULTIPLIERS.get(self.lives, 0.5)
 
     def load_level(self, level_num):
         level_path = os.path.join(LEVELS_DIR, f"level{level_num}.txt")
@@ -67,6 +78,8 @@ class Game:
         self.frightened_timer = 0.0
         self.ghost_eat_score = 200
         self.eaten_ghosts.clear()
+        self.level_start_time = time.time()
+        self.level_time_bonus = 0
 
     def start_game(self):
         self.score = 0
@@ -242,7 +255,7 @@ class Game:
             if points > 0:
                 self.audio.play_sound("dot")
 
-            self.score += points
+            self.score += int(points * self.score_multiplier)
 
             if super_dots > 0:
                 self.frightened_timer = FRIGHTENED_DURATION
@@ -252,6 +265,9 @@ class Game:
                     ghost.allow_frightened_again()
 
             if self.food_manager.all_collected():
+                elapsed = max(1.0, time.time() - self.level_start_time)
+                self.level_time_bonus = min(MAX_TIME_BONUS, int(TIME_BONUS_BASE / elapsed))
+                self.score += self.level_time_bonus
                 self.state = GameState.LEVEL_COMPLETE
 
         if self.frightened_timer > 0:
@@ -263,7 +279,7 @@ class Game:
                     ghost_id = id(ghost)
 
                     if ghost_id not in self.eaten_ghosts:
-                        self.score += self.ghost_eat_score
+                        self.score += int(self.ghost_eat_score * self.score_multiplier)
                         self.eaten_ghosts.add(ghost_id)
                         self.ghost_eat_score = min(self.ghost_eat_score * 2, 1600)
                         ghost.send_to_spawn()
@@ -312,7 +328,7 @@ class Game:
             if self.player:
                 self.player.draw(self.screen)
 
-            self.ui.draw_hud(self.score, self.lives)
+            self.ui.draw_hud(self.score, self.lives, self.score_multiplier)
 
             if self.state == GameState.PAUSED:
                 resume_rect, menu_rect = self.ui.draw_pause()
@@ -320,7 +336,7 @@ class Game:
                 self.buttons["main_menu"] = menu_rect
 
         elif self.state == GameState.LEVEL_COMPLETE:
-            next_rect, menu_rect = self.ui.draw_level_complete(self.current_level, self.score)
+            next_rect, menu_rect = self.ui.draw_level_complete(self.current_level, self.score, self.level_time_bonus)
             self.buttons["next_level"] = next_rect
             self.buttons["victory_menu"] = menu_rect
 
