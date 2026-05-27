@@ -1,5 +1,5 @@
 import pygame
-from src.settings import SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, YELLOW, BLACK, BLUE, TOTAL_LEVELS
+from src.settings import SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, YELLOW, BLACK, BLUE, CYAN, TOTAL_LEVELS
 
 BLUE_FRAME = (0, 0, 255) 
 BLACK = (0, 0, 0)
@@ -52,16 +52,20 @@ class UI:
         
         return button_rect
 
-    def draw_level_complete(self, current_level, score):
+    def draw_level_complete(self, current_level, score, time_bonus=0):
         YELLOW = (255, 255, 0)
 
         victory_text = self.font_large.render("VICTORY!", True, YELLOW)
-        vic_rect = victory_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
+        vic_rect = victory_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 110))
         self.screen.blit(victory_text, vic_rect)
 
         level_text = self.font_small.render(f"LEVEL {current_level} COMPLETED", True, WHITE)
-        level_rect = level_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 20))
+        level_rect = level_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
         self.screen.blit(level_text, level_rect)
+
+        bonus_text = self.font_small.render(f"TIME BONUS: +{time_bonus}", True, CYAN)
+        bonus_rect = bonus_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 10))
+        self.screen.blit(bonus_text, bonus_rect)
 
         if current_level < TOTAL_LEVELS:
             score_label = f"CURRENT SCORE: {score}"
@@ -69,13 +73,13 @@ class UI:
             score_label = f"FINAL SCORE: {score}"
 
         score_text = self.font_small.render(score_label, True, WHITE)
-        score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 15))
+        score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 25))
         self.screen.blit(score_text, score_rect)
 
         if current_level < TOTAL_LEVELS:
             text_surf1 = self.font_small.render("NEXT LEVEL", True, YELLOW)
             next_rect = pygame.Rect(0, 0, 220, 45)
-            next_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 70)
+            next_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80)
             
             pygame.draw.rect(self.screen, BLACK, next_rect, border_radius=5)
             pygame.draw.rect(self.screen, BLUE, next_rect, width=3, border_radius=5)
@@ -83,7 +87,7 @@ class UI:
 
             text_surf2 = self.font_small.render("MAIN MENU", True, YELLOW)
             menu_rect = pygame.Rect(0, 0, 220, 45)
-            menu_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130)
+            menu_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 140)
             
             pygame.draw.rect(self.screen, BLACK, menu_rect, border_radius=5)
             pygame.draw.rect(self.screen, BLUE, menu_rect, width=3, border_radius=5)
@@ -93,7 +97,7 @@ class UI:
         else:
             text_surf2 = self.font_small.render("MAIN MENU", True, YELLOW)
             menu_rect = pygame.Rect(0, 0, 220, 45)
-            menu_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 70)
+            menu_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80)
             
             pygame.draw.rect(self.screen, BLACK, menu_rect, border_radius=5)
             pygame.draw.rect(self.screen, BLUE, menu_rect, width=3, border_radius=5)
@@ -101,14 +105,15 @@ class UI:
             
             return None, menu_rect
 
-    def draw_hud(self, score, lives):
+    def draw_hud(self, score, lives, multiplier=1.0):
         y_poz = 20 
         
         score_surf = self.font_small.render(f"SCORE: {score}", True, (255, 255, 255))
         self.screen.blit(score_surf, (30, y_poz))
         
         lives_surf = self.font_small.render(f"LIVES: {lives}", True, (255, 255, 0))
-        self.screen.blit(lives_surf, (SCREEN_WIDTH - 200, y_poz))
+        lives_rect = lives_surf.get_rect(topright=(SCREEN_WIDTH - 30, y_poz))
+        self.screen.blit(lives_surf, lives_rect)
 
     def draw_game_over(self, score):
         YELLOW = (255, 255, 0)
