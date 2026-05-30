@@ -16,6 +16,8 @@ from src.settings import (
     LIVES_SCORE_MULTIPLIERS,
     TIME_BONUS_BASE,
     MAX_TIME_BONUS,
+    DIFFICULTY_PRESETS,
+    SCALED_TILE,
 )
 from src.sprite_loader import SpriteLoader
 from src.map import Map
@@ -55,6 +57,10 @@ class Game:
         self.level_start_time = 0.0
         self.level_time_bonus = 0
 
+        self.selected_lives = PLAYER_LIVES
+        self.selected_difficulty = "Normal"
+        self.active_frightened_duration = FRIGHTENED_DURATION
+
         self.buttons = {}
         self.audio = AudioManager()
 
@@ -80,10 +86,22 @@ class Game:
         self.eaten_ghosts.clear()
         self.level_start_time = time.time()
         self.level_time_bonus = 0
+        self._apply_difficulty()
+
+    def _apply_difficulty(self):
+        preset = DIFFICULTY_PRESETS.get(self.selected_difficulty, DIFFICULTY_PRESETS["Normal"])
+        normal_speed = SCALED_TILE * preset["ghost_speed_mult"]
+        frightened_speed = normal_speed * 0.5
+        for ghost in self.ghosts:
+            ghost.normal_speed = normal_speed
+            ghost.frightened_speed = frightened_speed
+            ghost.speed = normal_speed
+            ghost.respawn_freeze_duration = preset["respawn_freeze"]
+        self.active_frightened_duration = preset["frightened_duration"]
 
     def start_game(self):
         self.score = 0
-        self.lives = PLAYER_LIVES
+        self.lives = self.selected_lives
         self.current_level = 1
         self.load_level(self.current_level)
         self.state = GameState.PLAYING
@@ -91,7 +109,7 @@ class Game:
 
     def select_level(self, level_num):
         self.score = 0
-        self.lives = PLAYER_LIVES
+        self.lives = self.selected_lives
         self.current_level = level_num
         self.load_level(self.current_level)
         self.state = GameState.PLAYING
@@ -116,11 +134,25 @@ class Game:
                 mouse_pos = event.pos
                 if self.state == GameState.MENU:
                     if self.buttons.get("play") and self.buttons["play"].collidepoint(mouse_pos):
-                        self.start_game()
+                        self.state = GameState.DIFFICULTY_SELECT
                     elif self.buttons.get("levels") and self.buttons["levels"].collidepoint(mouse_pos):
                         self.state = GameState.LEVEL_SELECT
                     elif self.buttons.get("exit") and self.buttons["exit"].collidepoint(mouse_pos):
                         self.running = False
+
+                elif self.state == GameState.DIFFICULTY_SELECT:
+                    for lives_val in (1, 2, 3):
+                        key = f"lives_{lives_val}"
+                        if self.buttons.get(key) and self.buttons[key].collidepoint(mouse_pos):
+                            self.selected_lives = lives_val
+                    for diff in ("Easy", "Normal", "Hard"):
+                        key = f"diff_{diff}"
+                        if self.buttons.get(key) and self.buttons[key].collidepoint(mouse_pos):
+                            self.selected_difficulty = diff
+                    if self.buttons.get("start") and self.buttons["start"].collidepoint(mouse_pos):
+                        self.start_game()
+                    elif self.buttons.get("diff_back") and self.buttons["diff_back"].collidepoint(mouse_pos):
+                        self.state = GameState.MENU
 
                 elif self.state == GameState.LEVEL_SELECT:
                     if self.buttons.get("lvl1") and self.buttons["lvl1"].collidepoint(mouse_pos):
@@ -142,6 +174,8 @@ class Game:
 
             if self.state == GameState.MENU:
                 self._handle_menu_events(event)
+            elif self.state == GameState.DIFFICULTY_SELECT:
+                self._handle_difficulty_select_events(event)
             elif self.state == GameState.LEVEL_SELECT:
                 self._handle_level_select_events(event)
             elif self.state == GameState.PLAYING:
@@ -156,9 +190,16 @@ class Game:
     def _handle_menu_events(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
-                self.start_game()
+                self.state = GameState.DIFFICULTY_SELECT
             elif event.key == pygame.K_ESCAPE:
                 self.running = False
+
+    def _handle_difficulty_select_events(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                self.start_game()
+            elif event.key == pygame.K_ESCAPE:
+                self.state = GameState.MENU
 
     def _handle_level_select_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -258,7 +299,7 @@ class Game:
             self.score += int(points * self.score_multiplier)
 
             if super_dots > 0:
-                self.frightened_timer = FRIGHTENED_DURATION
+                self.frightened_timer = self.active_frightened_duration
                 self.ghost_eat_score = 200
                 self.eaten_ghosts.clear()
                 for ghost in self.ghosts:
@@ -316,6 +357,10 @@ class Game:
             self.buttons["lvl2"] = l2
             self.buttons["lvl3"] = l3
             self.buttons["back"] = b
+
+        elif self.state == GameState.DIFFICULTY_SELECT:
+            button_map = self.ui.draw_difficulty_select(self.selected_lives, self.selected_difficulty)
+            self.buttons.update(button_map)
 
         elif self.state in (GameState.PLAYING, GameState.PAUSED):
             if self.game_map:

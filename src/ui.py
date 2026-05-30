@@ -105,6 +105,52 @@ class UI:
             
             return None, menu_rect
 
+    def draw_difficulty_select(self, selected_lives, selected_difficulty):
+        self.screen.fill(BLACK)
+
+        title = self.font_large.render("SELECT DIFFICULTY", True, YELLOW)
+        self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 70)))
+
+        lives_label = self.font_small.render("LIVES", True, WHITE)
+        self.screen.blit(lives_label, lives_label.get_rect(center=(SCREEN_WIDTH // 2, 140)))
+
+        buttons = {}
+        lives_options = [1, 2, 3]
+        total_w = len(lives_options) * 80 + (len(lives_options) - 1) * 20
+        start_x = SCREEN_WIDTH // 2 - total_w // 2
+
+        for i, val in enumerate(lives_options):
+            rect = pygame.Rect(start_x + i * 100, 165, 80, 45)
+            color = YELLOW if selected_lives == val else WHITE
+            pygame.draw.rect(self.screen, BLACK, rect, border_radius=5)
+            pygame.draw.rect(self.screen, color, rect, width=3, border_radius=5)
+            surf = self.font_small.render(str(val), True, color)
+            self.screen.blit(surf, surf.get_rect(center=rect.center))
+            buttons[f"lives_{val}"] = rect
+
+        diff_label = self.font_small.render("CHALLENGE", True, WHITE)
+        self.screen.blit(diff_label, diff_label.get_rect(center=(SCREEN_WIDTH // 2, 240)))
+
+        diff_options = ["Easy", "Normal", "Hard"]
+        total_w = len(diff_options) * 120 + (len(diff_options) - 1) * 10
+        start_x = SCREEN_WIDTH // 2 - total_w // 2
+
+        for i, diff in enumerate(diff_options):
+            rect = pygame.Rect(start_x + i * 130, 265, 120, 45)
+            color = YELLOW if selected_difficulty == diff else WHITE
+            pygame.draw.rect(self.screen, BLACK, rect, border_radius=5)
+            pygame.draw.rect(self.screen, color, rect, width=3, border_radius=5)
+            surf = self.font_small.render(diff.upper(), True, color)
+            self.screen.blit(surf, surf.get_rect(center=rect.center))
+            buttons[f"diff_{diff}"] = rect
+
+        start_rect = self.draw_button("START", 360)
+        back_rect = self.draw_button("BACK", 440)
+        buttons["start"] = start_rect
+        buttons["diff_back"] = back_rect
+
+        return buttons
+
     def draw_hud(self, score, lives, multiplier=1.0):
         y_poz = 20 
         
