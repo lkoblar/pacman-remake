@@ -185,12 +185,18 @@ class Game:
             if event.key == pygame.K_ESCAPE:
                 self.audio.stop_music()
                 self.state = GameState.PAUSED
+            elif event.key == pygame.K_m:
+                self.audio.toggle_mute()
 
     def _handle_paused_events(self, event):
         if event.type == pygame.KEYDOWN:
+
             if event.key == pygame.K_ESCAPE:
                 self.state = GameState.PLAYING
                 self.audio.play_music()
+
+            elif event.key == pygame.K_m:
+                self.audio.toggle_mute()
 
     def _handle_game_over_events(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
