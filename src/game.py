@@ -27,6 +27,9 @@ from src.settings import (
     MP_LEVEL,
     MP_DIFFICULTIES,
     MP_DEFAULT_DIFFICULTY,
+    COOP_LEVEL,
+    COOP_SCREEN_WIDTH,
+    COOP_SCREEN_HEIGHT,
 )
 from src.sprite_loader import SpriteLoader
 from src.map import Map
@@ -35,7 +38,7 @@ from src.ghost import Ghost
 from src.food import FoodManager
 from src.ui import UI
 from src.audio import AudioManager
-from src.world import PlayerWorld
+from src.world import PlayerWorld, CoopWorld
 
 
 class Game:
@@ -76,6 +79,8 @@ class Game:
         self.mp_ready2 = False
         self.mp_countdown = 0.0
         self.mp_difficulty = MP_DEFAULT_DIFFICULTY
+        self.mp_mode = "battle"
+        self.coop_world = None
 
     @property
     def frightened_active(self):
@@ -120,6 +125,10 @@ class Game:
         self.screen = pygame.display.set_mode((MP_SCREEN_WIDTH, SCREEN_HEIGHT))
         self.ui.screen = self.screen
 
+    def _enter_coop_screen(self):
+        self.screen = pygame.display.set_mode((COOP_SCREEN_WIDTH, COOP_SCREEN_HEIGHT))
+        self.ui.screen = self.screen
+
     def _exit_to_menu_screen(self):
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.ui.screen = self.screen
@@ -129,13 +138,33 @@ class Game:
         self.mp_ready2 = False
         self.world1 = None
         self.world2 = None
+        self.coop_world = None
         self.audio.stop_music()
-        self._enter_multiplayer_screen()
+        if self.mp_mode == "coop":
+            self._enter_coop_screen()
+        else:
+            self._enter_multiplayer_screen()
         self.state = GameState.MULTIPLAYER_READY
+
+    def start_ready_match(self):
+        if self.mp_mode == "coop":
+            self.start_coop()
+        else:
+            self.start_multiplayer()
 
     def start_multiplayer(self):
         self.world1 = PlayerWorld(MP_LEVEL, self.sprite_loader, CONTROLS_WASD, "PLAYER 1", self.mp_difficulty)
         self.world2 = PlayerWorld(MP_LEVEL, self.sprite_loader, CONTROLS_ARROWS, "PLAYER 2", self.mp_difficulty)
+        self.audio.play_music()
+        self.state = GameState.MULTIPLAYER_PLAYING
+
+    def start_coop(self):
+        self.coop_world = CoopWorld(
+            COOP_LEVEL,
+            self.sprite_loader,
+            [(CONTROLS_WASD, "PLAYER 1"), (CONTROLS_ARROWS, "PLAYER 2")],
+        )
+        self.coop_world.level_start_time = time.time()
         self.audio.play_music()
         self.state = GameState.MULTIPLAYER_PLAYING
 
@@ -151,6 +180,7 @@ class Game:
         self.audio.stop_music()
         self.world1 = None
         self.world2 = None
+        self.coop_world = None
         self.mp_ready1 = False
         self.mp_ready2 = False
         self._exit_to_menu_screen()
@@ -177,7 +207,7 @@ class Game:
                     if self.buttons.get("play") and self.buttons["play"].collidepoint(mouse_pos):
                         self.start_game()
                     elif self.buttons.get("multiplayer") and self.buttons["multiplayer"].collidepoint(mouse_pos):
-                        self.state = GameState.MULTIPLAYER_DIFFICULTY
+                        self.state = GameState.MULTIPLAYER_MODE_SELECT
                     elif self.buttons.get("gamemodes") and self.buttons["gamemodes"].collidepoint(mouse_pos):
                         self.state = GameState.GAMEMODES_SELECT
                     elif self.buttons.get("levels") and self.buttons["levels"].collidepoint(mouse_pos):
@@ -212,6 +242,16 @@ class Game:
                         self.audio.play_music()
                     elif self.buttons.get("main_menu") and self.buttons["main_menu"].collidepoint(mouse_pos):
                         self.audio.stop_music()
+                        self.state = GameState.MENU
+
+                elif self.state == GameState.MULTIPLAYER_MODE_SELECT:
+                    if self.buttons.get("mp_battle") and self.buttons["mp_battle"].collidepoint(mouse_pos):
+                        self.mp_mode = "battle"
+                        self.state = GameState.MULTIPLAYER_DIFFICULTY
+                    elif self.buttons.get("mp_coop") and self.buttons["mp_coop"].collidepoint(mouse_pos):
+                        self.mp_mode = "coop"
+                        self.open_multiplayer_ready()
+                    elif self.buttons.get("mp_mode_back") and self.buttons["mp_mode_back"].collidepoint(mouse_pos):
                         self.state = GameState.MENU
 
                 elif self.state == GameState.MULTIPLAYER_DIFFICULTY:
@@ -250,6 +290,8 @@ class Game:
                 self._handle_game_over_events(event)
             elif self.state == GameState.LEVEL_COMPLETE:
                 self._handle_level_complete_events(event)
+            elif self.state == GameState.MULTIPLAYER_MODE_SELECT:
+                self._handle_multiplayer_mode_select_events(event)
             elif self.state == GameState.MULTIPLAYER_DIFFICULTY:
                 self._handle_multiplayer_difficulty_events(event)
             elif self.state == GameState.MULTIPLAYER_READY:
@@ -281,6 +323,11 @@ class Game:
             elif event.key == pygame.K_m:
                 self.audio.toggle_mute()
 
+    def _handle_multiplayer_mode_select_events(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.state = GameState.MENU
+
     def _handle_multiplayer_difficulty_events(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -302,7 +349,7 @@ class Game:
                 self.mp_ready2 = True
 
             if self.mp_ready1 and self.mp_ready2:
-                self.start_multiplayer()
+                self.start_ready_match()
 
     def _handle_multiplayer_playing_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -381,7 +428,10 @@ class Game:
 
     def update(self, dt):
         if self.state == GameState.MULTIPLAYER_PLAYING:
-            self._update_multiplayer(dt)
+            if self.mp_mode == "coop":
+                self._update_coop(dt)
+            else:
+                self._update_multiplayer(dt)
             return
 
         if self.state == GameState.MULTIPLAYER_COUNTDOWN:
@@ -479,6 +529,17 @@ class Game:
             self.audio.stop_music()
             self.state = GameState.MULTIPLAYER_RESULT
 
+    def _update_coop(self, dt):
+        if not self.coop_world:
+            return
+
+        keys = pygame.key.get_pressed()
+        self.coop_world.update(dt, keys, self.audio)
+
+        if self.coop_world.finished:
+            self.audio.stop_music()
+            self.state = GameState.MULTIPLAYER_RESULT
+
     def render(self):
         self.screen.fill(BLACK)
 
@@ -534,6 +595,12 @@ class Game:
             restart_rect = self.ui.draw_game_over(self.score)
             self.buttons["restart"] = restart_rect
 
+        elif self.state == GameState.MULTIPLAYER_MODE_SELECT:
+            battle_rect, coop_rect, back_rect = self.ui.draw_multiplayer_mode_select()
+            self.buttons["mp_battle"] = battle_rect
+            self.buttons["mp_coop"] = coop_rect
+            self.buttons["mp_mode_back"] = back_rect
+
         elif self.state == GameState.MULTIPLAYER_DIFFICULTY:
             easy_rect, normal_rect, hard_rect, back_rect = self.ui.draw_multiplayer_difficulty()
             self.buttons["mp_easy"] = easy_rect
@@ -542,31 +609,44 @@ class Game:
             self.buttons["mp_diff_back"] = back_rect
 
         elif self.state == GameState.MULTIPLAYER_READY:
-            self.ui.draw_multiplayer_ready(self.mp_ready1, self.mp_ready2)
+            title = "CO-OP" if self.mp_mode == "coop" else "MULTIPLAYER"
+            self.ui.draw_multiplayer_ready(self.mp_ready1, self.mp_ready2, title)
 
         elif self.state == GameState.MULTIPLAYER_PLAYING:
-            self._render_multiplayer()
+            self._render_active_multiplayer()
 
         elif self.state == GameState.MULTIPLAYER_PAUSED:
-            self._render_multiplayer()
+            self._render_active_multiplayer()
             resume_rect, menu_rect = self.ui.draw_multiplayer_pause()
             self.buttons["mp_resume"] = resume_rect
             self.buttons["mp_pause_menu"] = menu_rect
 
         elif self.state == GameState.MULTIPLAYER_COUNTDOWN:
-            self._render_multiplayer()
+            self._render_active_multiplayer()
             number = max(1, math.ceil(self.mp_countdown))
             self.ui.draw_multiplayer_countdown(number)
 
         elif self.state == GameState.MULTIPLAYER_RESULT:
-            again_rect, menu_rect = self.ui.draw_multiplayer_result(
-                self.world1.score if self.world1 else 0,
-                self.world2.score if self.world2 else 0,
-            )
+            if self.mp_mode == "coop":
+                again_rect, menu_rect = self.ui.draw_coop_result(
+                    self.coop_world.score if self.coop_world else 0,
+                    self.coop_world.result if self.coop_world else "lose",
+                )
+            else:
+                again_rect, menu_rect = self.ui.draw_multiplayer_result(
+                    self.world1.score if self.world1 else 0,
+                    self.world2.score if self.world2 else 0,
+                )
             self.buttons["mp_again"] = again_rect
             self.buttons["mp_menu"] = menu_rect
 
         pygame.display.flip()
+
+    def _render_active_multiplayer(self):
+        if self.mp_mode == "coop":
+            self._render_coop()
+        else:
+            self._render_multiplayer()
 
     def _render_multiplayer(self):
         if not self.world1 or not self.world2:
@@ -596,3 +676,15 @@ class Game:
             (SCREEN_WIDTH + MP_DIVIDER // 2, SCREEN_HEIGHT),
             MP_DIVIDER,
         )
+
+    def _render_coop(self):
+        if not self.coop_world:
+            return
+
+        board_height = COOP_SCREEN_HEIGHT - 50
+        board_surface = self.screen.subsurface((0, 50, COOP_SCREEN_WIDTH, board_height))
+        self.coop_world.render(board_surface)
+
+        lives1 = self.coop_world.lives[0] if len(self.coop_world.lives) > 0 else 0
+        lives2 = self.coop_world.lives[1] if len(self.coop_world.lives) > 1 else 0
+        self.ui.draw_coop_hud(self.coop_world.score, lives1, lives2, COOP_SCREEN_WIDTH)
