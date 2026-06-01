@@ -15,6 +15,8 @@ LABEL_COLOR = (180, 180, 180)
 class Map:
     def __init__(self, level_path, sprite_loader=None, debug=False):
         self.grid = []
+        self.cols = COLS
+        self.rows = ROWS
         self.sprite_loader = sprite_loader
         self.debug = debug
         self.debug_font = None
@@ -23,17 +25,22 @@ class Map:
     def load(self, path):
         self.grid = []
         with open(path, "r") as f:
-            for line in f:
-                row = list(line.rstrip("\n"))
-                while len(row) < COLS:
-                    row.append(EMPTY)
-                row = row[:COLS]
-                self.grid.append(row)
+            lines = [line.rstrip("\n") for line in f]
 
-        while len(self.grid) < ROWS:
-            self.grid.append([EMPTY] * COLS)
+        while lines and lines[-1].strip() == "":
+            lines.pop()
 
-        self.grid = self.grid[:ROWS]
+        if not lines:
+            lines = [""]
+
+        self.rows = len(lines)
+        self.cols = max(len(line) for line in lines)
+
+        for line in lines:
+            row = list(line)
+            while len(row) < self.cols:
+                row.append(EMPTY)
+            self.grid.append(row)
 
     def toggle_debug(self):
         self.debug = not self.debug

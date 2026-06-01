@@ -40,6 +40,7 @@ class GameState(Enum):
     LEVEL_COMPLETE = auto()
     LEVEL_SELECT = auto()
     GAMEMODES_SELECT = auto()
+    MULTIPLAYER_MODE_SELECT = auto()
     MULTIPLAYER_DIFFICULTY = auto()
     MULTIPLAYER_READY = auto()
     MULTIPLAYER_PLAYING = auto()
@@ -80,3 +81,12 @@ MP_DIFFICULTIES = {
     "HARD":   {"lives": 1, "player_speed": 1.15, "ghost_speed": 1.2},
 }
 MP_DEFAULT_DIFFICULTY = "NORMAL"
+
+COOP_LEVEL = "coop1"
+COOP_COLS = 21
+COOP_ROWS = 19
+COOP_SCREEN_WIDTH = COOP_COLS * SCALED_TILE
+COOP_SCREEN_HEIGHT = COOP_ROWS * SCALED_TILE + 50
+COOP_LIVES = 3
+COOP_P1_TINT = None
+COOP_P2_TINT = (0, 230, 0)

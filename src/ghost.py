@@ -2,7 +2,7 @@ import random
 import pygame
 import math
 
-from src.settings import GHOST_SPAWN, SCALED_TILE, SCALED_SPRITE, COLS, ROWS, BLUE, WHITE
+from src.settings import GHOST_SPAWN, SCALED_TILE, SCALED_SPRITE, BLUE, WHITE
 
 DIRECTION_VECTORS = {
     "up": (0, -1),
@@ -109,7 +109,7 @@ class Ghost:
         target_x = grid_x + dx
         target_y = grid_y + dy
 
-        if target_x < 0 or target_x >= COLS or target_y < 0 or target_y >= ROWS:
+        if target_x < 0 or target_x >= game_map.cols or target_y < 0 or target_y >= game_map.rows:
             return True
 
         return not game_map.is_wall(target_x, target_y)
@@ -126,7 +126,7 @@ class Ghost:
         return valid
 
     def _choose_direction(self, game_map, player=None, all_ghosts=None):
-        if self.grid_x < 0 or self.grid_x >= COLS or self.grid_y < 0 or self.grid_y >= ROWS:
+        if self.grid_x < 0 or self.grid_x >= game_map.cols or self.grid_y < 0 or self.grid_y >= game_map.rows:
             return
 
         valid = self._valid_directions(game_map)
@@ -177,7 +177,7 @@ class Ghost:
                     tx = pivot_x + vec_x
                     ty = pivot_y + vec_y
                     
-                    self.current_target = (max(0, min(COLS - 1, tx)), max(0, min(ROWS - 1, ty)))
+                    self.current_target = (max(0, min(game_map.cols - 1, tx)), max(0, min(game_map.rows - 1, ty)))
                 else:
                     self.current_target = (p_x, p_y)
 
@@ -242,10 +242,10 @@ class Ghost:
 
         # vsi stirje koti
         corners = [
-            (0, 0),             # Zgoraj levo
-            (COLS - 1, 0),      # Zgoraj desno
-            (0, ROWS - 1),      # Spodaj levo
-            (COLS - 1, ROWS - 1)# Spodaj desno
+            (0, 0),                                 # Zgoraj levo
+            (game_map.cols - 1, 0),                 # Zgoraj desno
+            (0, game_map.rows - 1),                 # Spodaj levo
+            (game_map.cols - 1, game_map.rows - 1)  # Spodaj desno
         ]
 
         # kot ki je najdlje od playera
@@ -292,20 +292,20 @@ class Ghost:
         self.pixel_x += dx * distance
         self.pixel_y += dy * distance
 
-    def _wrap_tunnel(self):
-        world_width = COLS * SCALED_TILE
-        world_height = ROWS * SCALED_TILE
+    def _wrap_tunnel(self, game_map):
+        world_width = game_map.cols * SCALED_TILE
+        world_height = game_map.rows * SCALED_TILE
 
         if self.pixel_x < -SCALED_TILE // 2:
             self.pixel_x += world_width
-            self.grid_x = COLS - 1
+            self.grid_x = game_map.cols - 1
         elif self.pixel_x >= world_width - SCALED_TILE // 2:
             self.pixel_x -= world_width
             self.grid_x = 0
 
         if self.pixel_y < -SCALED_TILE // 2:
             self.pixel_y += world_height
-            self.grid_y = ROWS - 1
+            self.grid_y = game_map.rows - 1
         elif self.pixel_y >= world_height - SCALED_TILE // 2:
             self.pixel_y -= world_height
             self.grid_y = 0
@@ -355,7 +355,7 @@ class Ghost:
                 self.grid_x, self.grid_y = self._next_tile(self.direction)
                 self._snap_to_center()
 
-                if 0 <= self.grid_x < COLS and 0 <= self.grid_y < ROWS:
+                if 0 <= self.grid_x < game_map.cols and 0 <= self.grid_y < game_map.rows:
                     valid = self._valid_directions(game_map)
                     if len(valid) >= 3:
                         if self.is_frightened:
@@ -363,7 +363,7 @@ class Ghost:
                         else:
                             self._choose_direction(game_map, player, all_ghosts)
 
-            self._wrap_tunnel()
+            self._wrap_tunnel(game_map)
 
     def get_rect(self):
         return pygame.Rect(
