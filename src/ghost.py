@@ -146,7 +146,6 @@ class Ghost:
         if not choices:
             choices = valid
 
-        # --- FAZA 1: Izračun tarč (Normalni način) ---
         if player:
             player_rect = player.get_rect()
             p_x = player_rect.centerx // SCALED_TILE
@@ -190,7 +189,6 @@ class Ghost:
                 else:
                     self.current_target = (self.spawn_x, self.spawn_y)
 
-        # --- FAZA 2: Iskanje poti do tarče ---
         if player:
             tx, ty = self.current_target
             best_direction = choices[0]
