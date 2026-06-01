@@ -107,6 +107,11 @@ class Game:
         self.state = GameState.PLAYING
         self.audio.play_music()
 
+    def start_gamemode(self, lives, difficulty):
+        self.selected_lives = lives
+        self.selected_difficulty = difficulty
+        self.start_game()
+
     def select_level(self, level_num):
         self.score = 0
         self.lives = self.selected_lives
@@ -134,24 +139,22 @@ class Game:
                 mouse_pos = event.pos
                 if self.state == GameState.MENU:
                     if self.buttons.get("play") and self.buttons["play"].collidepoint(mouse_pos):
-                        self.state = GameState.DIFFICULTY_SELECT
+                        self.start_gamemode(lives=PLAYER_LIVES, difficulty="Normal")
+                    elif self.buttons.get("gamemodes") and self.buttons["gamemodes"].collidepoint(mouse_pos):
+                        self.state = GameState.GAMEMODES_SELECT
                     elif self.buttons.get("levels") and self.buttons["levels"].collidepoint(mouse_pos):
                         self.state = GameState.LEVEL_SELECT
                     elif self.buttons.get("exit") and self.buttons["exit"].collidepoint(mouse_pos):
                         self.running = False
 
-                elif self.state == GameState.DIFFICULTY_SELECT:
-                    for lives_val in (1, 2, 3):
-                        key = f"lives_{lives_val}"
-                        if self.buttons.get(key) and self.buttons[key].collidepoint(mouse_pos):
-                            self.selected_lives = lives_val
-                    for diff in ("Easy", "Normal", "Hard"):
-                        key = f"diff_{diff}"
-                        if self.buttons.get(key) and self.buttons[key].collidepoint(mouse_pos):
-                            self.selected_difficulty = diff
-                    if self.buttons.get("start") and self.buttons["start"].collidepoint(mouse_pos):
-                        self.start_game()
-                    elif self.buttons.get("diff_back") and self.buttons["diff_back"].collidepoint(mouse_pos):
+                elif self.state == GameState.GAMEMODES_SELECT:
+                    if self.buttons.get("one_life") and self.buttons["one_life"].collidepoint(mouse_pos):
+                        self.start_gamemode(lives=1, difficulty="Normal")
+                    elif self.buttons.get("hard_mode") and self.buttons["hard_mode"].collidepoint(mouse_pos):
+                        self.start_gamemode(lives=PLAYER_LIVES, difficulty="Hard")
+                    elif self.buttons.get("battle_mode") and self.buttons["battle_mode"].collidepoint(mouse_pos):
+                        self.start_gamemode(lives=1, difficulty="Hard")
+                    elif self.buttons.get("back") and self.buttons["back"].collidepoint(mouse_pos):
                         self.state = GameState.MENU
 
                 elif self.state == GameState.LEVEL_SELECT:
@@ -174,8 +177,8 @@ class Game:
 
             if self.state == GameState.MENU:
                 self._handle_menu_events(event)
-            elif self.state == GameState.DIFFICULTY_SELECT:
-                self._handle_difficulty_select_events(event)
+            elif self.state == GameState.GAMEMODES_SELECT:
+                self._handle_level_select_events(event)
             elif self.state == GameState.LEVEL_SELECT:
                 self._handle_level_select_events(event)
             elif self.state == GameState.PLAYING:
@@ -190,16 +193,9 @@ class Game:
     def _handle_menu_events(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
-                self.state = GameState.DIFFICULTY_SELECT
+                self.start_gamemode(lives=PLAYER_LIVES, difficulty="Normal")
             elif event.key == pygame.K_ESCAPE:
                 self.running = False
-
-    def _handle_difficulty_select_events(self, event):
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
-                self.start_game()
-            elif event.key == pygame.K_ESCAPE:
-                self.state = GameState.MENU
 
     def _handle_level_select_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -211,12 +207,16 @@ class Game:
             if event.key == pygame.K_ESCAPE:
                 self.audio.stop_music()
                 self.state = GameState.PAUSED
+            elif event.key == pygame.K_m:
+                self.audio.toggle_mute()
 
     def _handle_paused_events(self, event):
         if event.type == pygame.KEYDOWN:
+
             if event.key == pygame.K_ESCAPE:
                 self.state = GameState.PLAYING
                 self.audio.play_music()
+
 
     def _handle_game_over_events(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -288,6 +288,7 @@ class Game:
                 self.player,
                 self.frightened_active,
                 flash,
+                self.ghosts
             )
 
         if self.food_manager and self.player:
@@ -346,10 +347,18 @@ class Game:
         self.screen.fill(BLACK)
 
         if self.state == GameState.MENU:
-            play_rect, levels_rect, exit_rect = self.ui.draw_menu()
+            play_rect, gamemodes_rect, levels_rect, exit_rect = self.ui.draw_menu()
             self.buttons["play"] = play_rect
+            self.buttons["gamemodes"] = gamemodes_rect
             self.buttons["levels"] = levels_rect
             self.buttons["exit"] = exit_rect
+
+        elif self.state == GameState.GAMEMODES_SELECT:
+            ol, hm, bm, b = self.ui.draw_gamemodes_menu()
+            self.buttons["one_life"] = ol
+            self.buttons["hard_mode"] = hm
+            self.buttons["battle_mode"] = bm
+            self.buttons["back"] = b
 
         elif self.state == GameState.LEVEL_SELECT:
             l1, l2, l3, b = self.ui.draw_levels_menu()
@@ -358,22 +367,21 @@ class Game:
             self.buttons["lvl3"] = l3
             self.buttons["back"] = b
 
-        elif self.state == GameState.DIFFICULTY_SELECT:
-            button_map = self.ui.draw_difficulty_select(self.selected_lives, self.selected_difficulty)
-            self.buttons.update(button_map)
-
         elif self.state in (GameState.PLAYING, GameState.PAUSED):
+            game_surface = self.screen.subsurface((0, 50, SCREEN_WIDTH, SCREEN_HEIGHT - 50))
+
             if self.game_map:
-                self.game_map.render(self.screen)
+                self.game_map.render(game_surface)
             if self.food_manager:
-                self.food_manager.render(self.screen)
+                self.food_manager.render(game_surface)
 
             for ghost in self.ghosts:
-                ghost.draw(self.screen)
+                ghost.draw(game_surface)
+#                ghost.draw_debug(self.screen)
             if self.player:
-                self.player.draw(self.screen)
+                self.player.draw(game_surface)
 
-            self.ui.draw_hud(self.score, self.lives, self.score_multiplier)
+            self.ui.draw_hud(self.score, self.lives, self.score_multiplier, self.audio.muted)
 
             if self.state == GameState.PAUSED:
                 resume_rect, menu_rect = self.ui.draw_pause()

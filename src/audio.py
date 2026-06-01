@@ -7,6 +7,7 @@ from src.settings import ASSETS_DIR
 class AudioManager:
     def __init__(self):
         self.enabled = False
+        self.muted = False
         self.sounds = {}
         self.music_path = os.path.join(ASSETS_DIR, "audio", "background.mp3")
 
@@ -51,3 +52,15 @@ class AudioManager:
     def stop_music(self):
         if self.enabled:
             pygame.mixer.music.stop()
+    
+    def toggle_mute(self):
+        if not self.enabled:
+            return
+        self.muted = not self.muted
+
+        volume = 0.0 if self.muted else 1.0
+
+        pygame.mixer.music.set_volume(volume)
+
+        for sound in self.sounds.values():
+            sound.set_volume(volume)

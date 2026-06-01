@@ -18,11 +18,26 @@ class UI:
         title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
         self.screen.blit(title, title_rect)
         
-        play_rect = self.draw_button("PLAY", 250)
-        levels_rect = self.draw_button("LEVELS", 350)
-        exit_rect = self.draw_button("EXIT", 450)
+        play_rect = self.draw_button("PLAY", 220)
+        gamemodes_rect = self.draw_button("GAMEMODES", 290)
+        levels_rect = self.draw_button("LEVELS", 360)
+        exit_rect = self.draw_button("EXIT", 430)
         
-        return play_rect, levels_rect, exit_rect
+        return play_rect, gamemodes_rect, levels_rect, exit_rect
+    
+    def draw_gamemodes_menu(self):
+        self.screen.fill(BLACK)
+        
+        title = self.font_large.render("GAMEMODES", True, YELLOW)
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
+        self.screen.blit(title, title_rect)
+        
+        one_life_rect = self.draw_button("ONE LIFE", 220)
+        hard_mode_rect = self.draw_button("HARD MODE", 300)
+        battle_mode_rect = self.draw_button("BATTLE MODE", 380)
+        back_rect = self.draw_button("BACK", 500)
+        
+        return one_life_rect, hard_mode_rect, battle_mode_rect, back_rect
     
     def draw_levels_menu(self):
         self.screen.fill(BLACK)
@@ -41,7 +56,7 @@ class UI:
     def draw_button(self, text, center_y):
         text_surf = self.font_small.render(text, True, YELLOW)
         
-        button_rect = pygame.Rect(0, 0, 180, 45)
+        button_rect = pygame.Rect(0, 0, 220, 45)
         button_rect.center = (SCREEN_WIDTH // 2, center_y)
         
         pygame.draw.rect(self.screen, BLACK, button_rect, border_radius=5)
@@ -105,57 +120,17 @@ class UI:
             
             return None, menu_rect
 
-    def draw_difficulty_select(self, selected_lives, selected_difficulty):
-        self.screen.fill(BLACK)
-
-        title = self.font_large.render("SELECT DIFFICULTY", True, YELLOW)
-        self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 70)))
-
-        lives_label = self.font_small.render("LIVES", True, WHITE)
-        self.screen.blit(lives_label, lives_label.get_rect(center=(SCREEN_WIDTH // 2, 140)))
-
-        buttons = {}
-        lives_options = [1, 2, 3]
-        total_w = len(lives_options) * 80 + (len(lives_options) - 1) * 20
-        start_x = SCREEN_WIDTH // 2 - total_w // 2
-
-        for i, val in enumerate(lives_options):
-            rect = pygame.Rect(start_x + i * 100, 165, 80, 45)
-            color = YELLOW if selected_lives == val else WHITE
-            pygame.draw.rect(self.screen, BLACK, rect, border_radius=5)
-            pygame.draw.rect(self.screen, color, rect, width=3, border_radius=5)
-            surf = self.font_small.render(str(val), True, color)
-            self.screen.blit(surf, surf.get_rect(center=rect.center))
-            buttons[f"lives_{val}"] = rect
-
-        diff_label = self.font_small.render("CHALLENGE", True, WHITE)
-        self.screen.blit(diff_label, diff_label.get_rect(center=(SCREEN_WIDTH // 2, 240)))
-
-        diff_options = ["Easy", "Normal", "Hard"]
-        total_w = len(diff_options) * 120 + (len(diff_options) - 1) * 10
-        start_x = SCREEN_WIDTH // 2 - total_w // 2
-
-        for i, diff in enumerate(diff_options):
-            rect = pygame.Rect(start_x + i * 130, 265, 120, 45)
-            color = YELLOW if selected_difficulty == diff else WHITE
-            pygame.draw.rect(self.screen, BLACK, rect, border_radius=5)
-            pygame.draw.rect(self.screen, color, rect, width=3, border_radius=5)
-            surf = self.font_small.render(diff.upper(), True, color)
-            self.screen.blit(surf, surf.get_rect(center=rect.center))
-            buttons[f"diff_{diff}"] = rect
-
-        start_rect = self.draw_button("START", 360)
-        back_rect = self.draw_button("BACK", 440)
-        buttons["start"] = start_rect
-        buttons["diff_back"] = back_rect
-
-        return buttons
-
-    def draw_hud(self, score, lives, multiplier=1.0):
+    def draw_hud(self, score, lives, multiplier=1.0, muted=False):
         y_poz = 20 
         
         score_surf = self.font_small.render(f"SCORE: {score}", True, (255, 255, 255))
         self.screen.blit(score_surf, (30, y_poz))
+
+        audio_status = "AUDIO: OFF" if muted else "AUDIO: ON"
+
+        audio_surf = self.font_small.render(audio_status, True, WHITE)
+        audio_rect = audio_surf.get_rect(bottomleft=(20, SCREEN_HEIGHT - 10))
+        self.screen.blit(audio_surf, audio_rect)
         
         lives_surf = self.font_small.render(f"LIVES: {lives}", True, (255, 255, 0))
         lives_rect = lives_surf.get_rect(topright=(SCREEN_WIDTH - 30, y_poz))
