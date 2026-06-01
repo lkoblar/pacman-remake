@@ -1,6 +1,8 @@
 import os
 from enum import Enum, auto
 
+import pygame
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 LEVELS_DIR = os.path.join(BASE_DIR, "levels")
@@ -27,6 +29,8 @@ RED = (255, 49, 49)
 CYAN = (92, 225, 230)
 MAGENTA = (226, 169, 241)
 ORANGE = (255, 145, 77)
+GREEN = (80, 220, 100)
+GRAY = (120, 120, 120)
 
 class GameState(Enum):
     MENU = auto()
@@ -36,6 +40,11 @@ class GameState(Enum):
     LEVEL_COMPLETE = auto()
     LEVEL_SELECT = auto()
     GAMEMODES_SELECT = auto()
+    MULTIPLAYER_READY = auto()
+    MULTIPLAYER_PLAYING = auto()
+    MULTIPLAYER_PAUSED = auto()
+    MULTIPLAYER_COUNTDOWN = auto()
+    MULTIPLAYER_RESULT = auto()
 
 WALL = "#"
 DOT = "."
@@ -53,3 +62,13 @@ FRIGHTENED_FLASH_TIME = 2.0
 LIVES_SCORE_MULTIPLIERS = {3: 1.5, 2: 1.0, 1: 0.5}
 TIME_BONUS_BASE = 30000
 MAX_TIME_BONUS = 2000
+
+CONTROLS_WASD = {"up": pygame.K_w, "down": pygame.K_s, "left": pygame.K_a, "right": pygame.K_d}
+CONTROLS_ARROWS = {"up": pygame.K_UP, "down": pygame.K_DOWN, "left": pygame.K_LEFT, "right": pygame.K_RIGHT}
+
+P1_READY_KEY = pygame.K_SPACE
+P2_READY_KEY = pygame.K_RETURN
+
+MP_DIVIDER = 4
+MP_SCREEN_WIDTH = SCREEN_WIDTH * 2 + MP_DIVIDER
+MP_LEVEL = 1

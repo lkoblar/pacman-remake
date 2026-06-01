@@ -36,14 +36,25 @@ class Player:
         self.speed = SCALED_TILE * 4
         self.moving = False
 
-    def handle_input(self, keys):
-        if keys[pygame.K_UP] or keys[pygame.K_w]:
+    def handle_input(self, keys, controls=None):
+        if controls is None:
+            if keys[pygame.K_UP] or keys[pygame.K_w]:
+                self.next_direction = "up"
+            elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
+                self.next_direction = "down"
+            elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
+                self.next_direction = "left"
+            elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                self.next_direction = "right"
+            return
+
+        if keys[controls["up"]]:
             self.next_direction = "up"
-        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
+        elif keys[controls["down"]]:
             self.next_direction = "down"
-        elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
+        elif keys[controls["left"]]:
             self.next_direction = "left"
-        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+        elif keys[controls["right"]]:
             self.next_direction = "right"
 
     def update(self, dt, game_map):
