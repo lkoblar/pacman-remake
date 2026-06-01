@@ -158,8 +158,37 @@ class Ghost:
                 if distance < min_distance:
                     min_distance = distance
                     best_direction = direction
+        
+            self.direction = best_direction
+
+        elif self.name == "pinky" and player:
+            player_rect = player.get_rect()
+            p_x = player_rect.centerx // SCALED_TILE
+            p_y = player_rect.centery // SCALED_TILE
+
+            # smer kam je player obrjen
+            p_dir = getattr(player, "direction", "left")
+            
+            # vektor smeri
+            p_dx, p_dy = DIRECTION_VECTORS.get(p_dir, (0, 0))
+
+            # pinky cilja 4 polja naprej v isto smer
+            target_x = p_x + (p_dx * 4)
+            target_y = p_y + (p_dy * 4)
+
+            # najbolsa pot do tarce
+            best_direction = choices[0]
+            min_distance = float('inf')
+
+            for direction in choices:
+                next_x, next_y = self._next_tile(direction)
+                distance = math.sqrt((next_x - target_x) ** 2 + (next_y - target_y) ** 2)
+                if distance < min_distance:
+                    min_distance = distance
+                    best_direction = direction
 
             self.direction = best_direction
+
         else:
             if self.direction in valid and len(valid) == 1:
                 return
