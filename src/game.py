@@ -1,5 +1,6 @@
 import os
 import time
+import math
 import pygame
 
 from src.settings import (
@@ -7,6 +8,7 @@ from src.settings import (
     SCREEN_HEIGHT,
     FPS,
     BLACK,
+    BLUE,
     GameState,
     LEVELS_DIR,
     PLAYER_LIVES,
@@ -16,6 +18,13 @@ from src.settings import (
     LIVES_SCORE_MULTIPLIERS,
     TIME_BONUS_BASE,
     MAX_TIME_BONUS,
+    CONTROLS_WASD,
+    CONTROLS_ARROWS,
+    P1_READY_KEY,
+    P2_READY_KEY,
+    MP_DIVIDER,
+    MP_SCREEN_WIDTH,
+    MP_LEVEL,
 )
 from src.sprite_loader import SpriteLoader
 from src.map import Map
@@ -24,6 +33,7 @@ from src.ghost import Ghost
 from src.food import FoodManager
 from src.ui import UI
 from src.audio import AudioManager
+from src.world import PlayerWorld
 
 
 class Game:
@@ -57,6 +67,12 @@ class Game:
 
         self.buttons = {}
         self.audio = AudioManager()
+
+        self.world1 = None
+        self.world2 = None
+        self.mp_ready1 = False
+        self.mp_ready2 = False
+        self.mp_countdown = 0.0
 
     @property
     def frightened_active(self):
@@ -97,6 +113,46 @@ class Game:
         self.state = GameState.PLAYING
         self.audio.play_music()
 
+    def _enter_multiplayer_screen(self):
+        self.screen = pygame.display.set_mode((MP_SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.ui.screen = self.screen
+
+    def _exit_to_menu_screen(self):
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.ui.screen = self.screen
+
+    def open_multiplayer_ready(self):
+        self.mp_ready1 = False
+        self.mp_ready2 = False
+        self.world1 = None
+        self.world2 = None
+        self.audio.stop_music()
+        self._enter_multiplayer_screen()
+        self.state = GameState.MULTIPLAYER_READY
+
+    def start_multiplayer(self):
+        self.world1 = PlayerWorld(MP_LEVEL, self.sprite_loader, CONTROLS_WASD, "PLAYER 1")
+        self.world2 = PlayerWorld(MP_LEVEL, self.sprite_loader, CONTROLS_ARROWS, "PLAYER 2")
+        self.audio.play_music()
+        self.state = GameState.MULTIPLAYER_PLAYING
+
+    def pause_multiplayer(self):
+        self.audio.stop_music()
+        self.state = GameState.MULTIPLAYER_PAUSED
+
+    def resume_multiplayer_countdown(self):
+        self.mp_countdown = 3.0
+        self.state = GameState.MULTIPLAYER_COUNTDOWN
+
+    def quit_multiplayer(self):
+        self.audio.stop_music()
+        self.world1 = None
+        self.world2 = None
+        self.mp_ready1 = False
+        self.mp_ready2 = False
+        self._exit_to_menu_screen()
+        self.state = GameState.MENU
+
     def run(self):
         while self.running:
             dt = self.clock.tick(FPS) / 1000.0
@@ -117,6 +173,8 @@ class Game:
                 if self.state == GameState.MENU:
                     if self.buttons.get("play") and self.buttons["play"].collidepoint(mouse_pos):
                         self.start_game()
+                    elif self.buttons.get("multiplayer") and self.buttons["multiplayer"].collidepoint(mouse_pos):
+                        self.open_multiplayer_ready()
                     elif self.buttons.get("gamemodes") and self.buttons["gamemodes"].collidepoint(mouse_pos):
                         self.state = GameState.GAMEMODES_SELECT
                     elif self.buttons.get("levels") and self.buttons["levels"].collidepoint(mouse_pos):
@@ -153,6 +211,18 @@ class Game:
                         self.audio.stop_music()
                         self.state = GameState.MENU
 
+                elif self.state == GameState.MULTIPLAYER_PAUSED:
+                    if self.buttons.get("mp_resume") and self.buttons["mp_resume"].collidepoint(mouse_pos):
+                        self.resume_multiplayer_countdown()
+                    elif self.buttons.get("mp_pause_menu") and self.buttons["mp_pause_menu"].collidepoint(mouse_pos):
+                        self.quit_multiplayer()
+
+                elif self.state == GameState.MULTIPLAYER_RESULT:
+                    if self.buttons.get("mp_again") and self.buttons["mp_again"].collidepoint(mouse_pos):
+                        self.open_multiplayer_ready()
+                    elif self.buttons.get("mp_menu") and self.buttons["mp_menu"].collidepoint(mouse_pos):
+                        self.quit_multiplayer()
+
             if self.state == GameState.MENU:
                 self._handle_menu_events(event)
             elif self.state == GameState.GAMEMODES_SELECT:
@@ -167,6 +237,14 @@ class Game:
                 self._handle_game_over_events(event)
             elif self.state == GameState.LEVEL_COMPLETE:
                 self._handle_level_complete_events(event)
+            elif self.state == GameState.MULTIPLAYER_READY:
+                self._handle_multiplayer_ready_events(event)
+            elif self.state == GameState.MULTIPLAYER_PLAYING:
+                self._handle_multiplayer_playing_events(event)
+            elif self.state == GameState.MULTIPLAYER_PAUSED:
+                self._handle_multiplayer_paused_events(event)
+            elif self.state == GameState.MULTIPLAYER_RESULT:
+                self._handle_multiplayer_result_events(event)
 
     def _handle_menu_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -187,6 +265,38 @@ class Game:
                 self.state = GameState.PAUSED
             elif event.key == pygame.K_m:
                 self.audio.toggle_mute()
+
+    def _handle_multiplayer_ready_events(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.quit_multiplayer()
+                return
+            if event.key == P1_READY_KEY:
+                self.mp_ready1 = True
+            if event.key == P2_READY_KEY:
+                self.mp_ready2 = True
+
+            if self.mp_ready1 and self.mp_ready2:
+                self.start_multiplayer()
+
+    def _handle_multiplayer_playing_events(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.pause_multiplayer()
+            elif event.key == pygame.K_m:
+                self.audio.toggle_mute()
+
+    def _handle_multiplayer_paused_events(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.resume_multiplayer_countdown()
+
+    def _handle_multiplayer_result_events(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                self.open_multiplayer_ready()
+            elif event.key == pygame.K_ESCAPE:
+                self.quit_multiplayer()
 
     def _handle_paused_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -245,6 +355,17 @@ class Game:
                 self.state = GameState.MENU
 
     def update(self, dt):
+        if self.state == GameState.MULTIPLAYER_PLAYING:
+            self._update_multiplayer(dt)
+            return
+
+        if self.state == GameState.MULTIPLAYER_COUNTDOWN:
+            self.mp_countdown = max(0.0, self.mp_countdown - dt)
+            if self.mp_countdown <= 0:
+                self.state = GameState.MULTIPLAYER_PLAYING
+                self.audio.play_music()
+            return
+
         if self.state != GameState.PLAYING:
             return
 
@@ -321,12 +442,25 @@ class Game:
                     for g in self.ghosts:
                         g.reset_position()
 
+    def _update_multiplayer(self, dt):
+        if not self.world1 or not self.world2:
+            return
+
+        keys = pygame.key.get_pressed()
+        self.world1.update(dt, keys, self.audio)
+        self.world2.update(dt, keys, self.audio)
+
+        if self.world1.finished and self.world2.finished:
+            self.audio.stop_music()
+            self.state = GameState.MULTIPLAYER_RESULT
+
     def render(self):
         self.screen.fill(BLACK)
 
         if self.state == GameState.MENU:
-            play_rect, gamemodes_rect, levels_rect, exit_rect = self.ui.draw_menu()
+            play_rect, multiplayer_rect, gamemodes_rect, levels_rect, exit_rect = self.ui.draw_menu()
             self.buttons["play"] = play_rect
+            self.buttons["multiplayer"] = multiplayer_rect
             self.buttons["gamemodes"] = gamemodes_rect
             self.buttons["levels"] = levels_rect
             self.buttons["exit"] = exit_rect
@@ -375,4 +509,58 @@ class Game:
             restart_rect = self.ui.draw_game_over(self.score)
             self.buttons["restart"] = restart_rect
 
+        elif self.state == GameState.MULTIPLAYER_READY:
+            self.ui.draw_multiplayer_ready(self.mp_ready1, self.mp_ready2)
+
+        elif self.state == GameState.MULTIPLAYER_PLAYING:
+            self._render_multiplayer()
+
+        elif self.state == GameState.MULTIPLAYER_PAUSED:
+            self._render_multiplayer()
+            resume_rect, menu_rect = self.ui.draw_multiplayer_pause()
+            self.buttons["mp_resume"] = resume_rect
+            self.buttons["mp_pause_menu"] = menu_rect
+
+        elif self.state == GameState.MULTIPLAYER_COUNTDOWN:
+            self._render_multiplayer()
+            number = max(1, math.ceil(self.mp_countdown))
+            self.ui.draw_multiplayer_countdown(number)
+
+        elif self.state == GameState.MULTIPLAYER_RESULT:
+            again_rect, menu_rect = self.ui.draw_multiplayer_result(
+                self.world1.score if self.world1 else 0,
+                self.world2.score if self.world2 else 0,
+            )
+            self.buttons["mp_again"] = again_rect
+            self.buttons["mp_menu"] = menu_rect
+
         pygame.display.flip()
+
+    def _render_multiplayer(self):
+        if not self.world1 or not self.world2:
+            return
+
+        board_height = SCREEN_HEIGHT - 50
+        left_x = 0
+        right_x = SCREEN_WIDTH + MP_DIVIDER
+
+        left_surface = self.screen.subsurface((left_x, 50, SCREEN_WIDTH, board_height))
+        self.world1.render(left_surface)
+
+        right_surface = self.screen.subsurface((right_x, 50, SCREEN_WIDTH, board_height))
+        self.world2.render(right_surface)
+
+        if self.world1.finished:
+            self.ui.draw_multiplayer_overlay(left_x, self.world1.finish_reason, self.world1.score)
+        if self.world2.finished:
+            self.ui.draw_multiplayer_overlay(right_x, self.world2.finish_reason, self.world2.score)
+
+        self.ui.draw_multiplayer_hud(left_x, self.world1.score, self.world1.lives, self.world1.label)
+        self.ui.draw_multiplayer_hud(right_x, self.world2.score, self.world2.lives, self.world2.label)
+
+        pygame.draw.line(
+            self.screen, BLUE,
+            (SCREEN_WIDTH + MP_DIVIDER // 2, 0),
+            (SCREEN_WIDTH + MP_DIVIDER // 2, SCREEN_HEIGHT),
+            MP_DIVIDER,
+        )
