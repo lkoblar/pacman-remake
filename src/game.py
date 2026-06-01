@@ -351,7 +351,7 @@ class Game:
 
             for ghost in self.ghosts:
                 ghost.draw(game_surface)
-            #   ghost.draw_debug(self.screen)
+#                ghost.draw_debug(self.screen)
             if self.player:
                 self.player.draw(game_surface)
 

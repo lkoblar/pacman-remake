@@ -126,10 +126,6 @@ class Ghost:
         return valid
 
     def _choose_direction(self, game_map, player=None, all_ghosts=None):
-        if self.name == "clyde":
-            self.current_target = (self.spawn_x, self.spawn_y)
-            return
-
         if self.grid_x < 0 or self.grid_x >= COLS or self.grid_y < 0 or self.grid_y >= ROWS:
             return
 
@@ -189,7 +185,17 @@ class Ghost:
                 else:
                     self.current_target = (p_x, p_y)
 
-        # iskanje poti do tarce
+            # clyde evklidska razdalja do Pac-Mana
+            elif self.name == "clyde":
+                distance = math.sqrt((self.grid_x - p_x) ** 2 + (self.grid_y - p_y) ** 2)
+                
+                if distance > 8:
+                    # Pogumen napada isto ko blinky ce je dalec
+                    self.current_target = (p_x, p_y)
+                else:
+                    # ce je blizu bezi na spawn
+                    self.current_target = (self.spawn_x, self.spawn_y)
+
         if player:
             tx, ty = self.current_target
             best_direction = choices[0]
