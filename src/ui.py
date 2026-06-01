@@ -1,5 +1,8 @@
 import pygame
-from src.settings import SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, YELLOW, BLACK, BLUE, CYAN, TOTAL_LEVELS
+from src.settings import (
+    SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, YELLOW, BLACK, BLUE, CYAN, RED, GREEN, GRAY,
+    TOTAL_LEVELS, MP_SCREEN_WIDTH, MP_DIVIDER,
+)
 
 BLUE_FRAME = (0, 0, 255) 
 BLACK = (0, 0, 0)
@@ -10,6 +13,7 @@ class UI:
         self.font_name = "Courier New"
         self.font_small = pygame.font.SysFont(self.font_name, 30, bold=True)
         self.font_large = pygame.font.SysFont(self.font_name, 45, bold=True)
+        self.font_huge = pygame.font.SysFont(self.font_name, 140, bold=True)
 
     def draw_menu(self):
         self.screen.fill((0, 0, 0))
@@ -18,12 +22,13 @@ class UI:
         title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
         self.screen.blit(title, title_rect)
         
-        play_rect = self.draw_button("PLAY", 220)
-        gamemodes_rect = self.draw_button("GAMEMODES", 290)
-        levels_rect = self.draw_button("LEVELS", 360)
-        exit_rect = self.draw_button("EXIT", 430)
+        play_rect = self.draw_button("PLAY", 200)
+        multiplayer_rect = self.draw_button("MULTIPLAYER", 265)
+        gamemodes_rect = self.draw_button("GAMEMODES", 330)
+        levels_rect = self.draw_button("LEVELS", 395)
+        exit_rect = self.draw_button("EXIT", 460)
         
-        return play_rect, gamemodes_rect, levels_rect, exit_rect
+        return play_rect, multiplayer_rect, gamemodes_rect, levels_rect, exit_rect
     
     def draw_gamemodes_menu(self):
         self.screen.fill(BLACK)
@@ -162,3 +167,155 @@ class UI:
         menu_rect = self.draw_button("MAIN MENU", 400)
         
         return resume_rect, menu_rect
+
+    def draw_multiplayer_ready(self, ready1, ready2):
+        self.screen.fill(BLACK)
+
+        title = self.font_large.render("MULTIPLAYER", True, YELLOW)
+        title_rect = title.get_rect(center=(MP_SCREEN_WIDTH // 2, 90))
+        self.screen.blit(title, title_rect)
+
+        left_cx = SCREEN_WIDTH // 2
+        right_cx = SCREEN_WIDTH + MP_DIVIDER + SCREEN_WIDTH // 2
+
+        self._draw_ready_panel(left_cx, "PLAYER 1", ["W", "A  S  D"], "READY: SPACE", ready1)
+        self._draw_ready_panel(right_cx, "PLAYER 2", ["UP", "LEFT  DOWN  RIGHT"], "READY: ENTER", ready2)
+
+        pygame.draw.line(
+            self.screen, BLUE,
+            (SCREEN_WIDTH + MP_DIVIDER // 2, 0),
+            (SCREEN_WIDTH + MP_DIVIDER // 2, SCREEN_HEIGHT),
+            MP_DIVIDER,
+        )
+
+    def _draw_ready_panel(self, center_x, label, control_lines, ready_hint, is_ready):
+        label_surf = self.font_large.render(label, True, WHITE)
+        self.screen.blit(label_surf, label_surf.get_rect(center=(center_x, 220)))
+
+        y = 320
+        for line in control_lines:
+            line_surf = self.font_small.render(line, True, CYAN)
+            self.screen.blit(line_surf, line_surf.get_rect(center=(center_x, y)))
+            y += 45
+
+        hint_surf = self.font_small.render(ready_hint, True, YELLOW)
+        self.screen.blit(hint_surf, hint_surf.get_rect(center=(center_x, y + 40)))
+
+        status_text = "READY!" if is_ready else "NOT READY"
+        status_color = GREEN if is_ready else GRAY
+        status_surf = self.font_large.render(status_text, True, status_color)
+        self.screen.blit(status_surf, status_surf.get_rect(center=(center_x, y + 120)))
+
+    def draw_multiplayer_hud(self, side_x, score, lives, label):
+        y_poz = 12
+
+        label_surf = self.font_small.render(label, True, YELLOW)
+        label_rect = label_surf.get_rect(midtop=(side_x + SCREEN_WIDTH // 2, y_poz))
+        self.screen.blit(label_surf, label_rect)
+
+        score_surf = self.font_small.render(f"SCORE: {score}", True, WHITE)
+        self.screen.blit(score_surf, (side_x + 20, y_poz))
+
+        lives_surf = self.font_small.render(f"LIVES: {lives}", True, YELLOW)
+        lives_rect = lives_surf.get_rect(topright=(side_x + SCREEN_WIDTH - 20, y_poz))
+        self.screen.blit(lives_surf, lives_rect)
+
+    def _draw_centered_button(self, text, center_x, center_y, width=240):
+        surf = self.font_small.render(text, True, YELLOW)
+        rect = pygame.Rect(0, 0, width, 45)
+        rect.center = (center_x, center_y)
+        pygame.draw.rect(self.screen, BLACK, rect, border_radius=5)
+        pygame.draw.rect(self.screen, BLUE, rect, width=3, border_radius=5)
+        self.screen.blit(surf, surf.get_rect(center=rect.center))
+        return rect
+
+    def draw_multiplayer_pause(self):
+        overlay = pygame.Surface((MP_SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 200))
+        self.screen.blit(overlay, (0, 0))
+
+        cx = MP_SCREEN_WIDTH // 2
+
+        title = self.font_large.render("PAUSED", True, YELLOW)
+        self.screen.blit(title, title.get_rect(center=(cx, SCREEN_HEIGHT // 2 - 120)))
+
+        resume_rect = self._draw_centered_button("RESUME", cx, SCREEN_HEIGHT // 2 - 20)
+        menu_rect = self._draw_centered_button("MAIN MENU", cx, SCREEN_HEIGHT // 2 + 50)
+
+        return resume_rect, menu_rect
+
+    def draw_multiplayer_countdown(self, number):
+        overlay = pygame.Surface((MP_SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))
+        self.screen.blit(overlay, (0, 0))
+
+        cx = MP_SCREEN_WIDTH // 2
+
+        num_surf = self.font_huge.render(str(number), True, YELLOW)
+        self.screen.blit(num_surf, num_surf.get_rect(center=(cx, SCREEN_HEIGHT // 2)))
+
+    def draw_multiplayer_overlay(self, side_x, finish_reason, score):
+        board_height = SCREEN_HEIGHT - 50
+
+        overlay = pygame.Surface((SCREEN_WIDTH, board_height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 190))
+        self.screen.blit(overlay, (side_x, 50))
+
+        cx = side_x + SCREEN_WIDTH // 2
+        cy = 50 + board_height // 2
+
+        if finish_reason == "cleared":
+            title_text = "FINISHED!"
+            title_color = GREEN
+        else:
+            title_text = "GAME OVER"
+            title_color = RED
+
+        title_surf = self.font_large.render(title_text, True, title_color)
+        self.screen.blit(title_surf, title_surf.get_rect(center=(cx, cy - 50)))
+
+        score_surf = self.font_small.render(f"SCORE: {score}", True, WHITE)
+        self.screen.blit(score_surf, score_surf.get_rect(center=(cx, cy + 5)))
+
+        wait_surf = self.font_small.render("WAITING...", True, YELLOW)
+        self.screen.blit(wait_surf, wait_surf.get_rect(center=(cx, cy + 55)))
+
+    def draw_multiplayer_result(self, score1, score2):
+        self.screen.fill(BLACK)
+
+        if score1 > score2:
+            result_text = "PLAYER 1 WINS"
+            result_color = YELLOW
+        elif score2 > score1:
+            result_text = "PLAYER 2 WINS"
+            result_color = YELLOW
+        else:
+            result_text = "DRAW"
+            result_color = WHITE
+
+        cx = MP_SCREEN_WIDTH // 2
+
+        title = self.font_large.render(result_text, True, result_color)
+        self.screen.blit(title, title.get_rect(center=(cx, SCREEN_HEIGHT // 2 - 140)))
+
+        p1_surf = self.font_small.render(f"PLAYER 1: {score1}", True, WHITE)
+        self.screen.blit(p1_surf, p1_surf.get_rect(center=(cx, SCREEN_HEIGHT // 2 - 60)))
+
+        p2_surf = self.font_small.render(f"PLAYER 2: {score2}", True, WHITE)
+        self.screen.blit(p2_surf, p2_surf.get_rect(center=(cx, SCREEN_HEIGHT // 2 - 15)))
+
+        again_surf = self.font_small.render("PLAY AGAIN", True, YELLOW)
+        again_rect = pygame.Rect(0, 0, 240, 45)
+        again_rect.center = (cx, SCREEN_HEIGHT // 2 + 60)
+        pygame.draw.rect(self.screen, BLACK, again_rect, border_radius=5)
+        pygame.draw.rect(self.screen, BLUE, again_rect, width=3, border_radius=5)
+        self.screen.blit(again_surf, again_surf.get_rect(center=again_rect.center))
+
+        menu_surf = self.font_small.render("MAIN MENU", True, YELLOW)
+        menu_rect = pygame.Rect(0, 0, 240, 45)
+        menu_rect.center = (cx, SCREEN_HEIGHT // 2 + 120)
+        pygame.draw.rect(self.screen, BLACK, menu_rect, border_radius=5)
+        pygame.draw.rect(self.screen, BLUE, menu_rect, width=3, border_radius=5)
+        self.screen.blit(menu_surf, menu_surf.get_rect(center=menu_rect.center))
+
+        return again_rect, menu_rect
