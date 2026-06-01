@@ -26,7 +26,7 @@ class Ghost:
         self.pixel_x = float(grid_x * SCALED_TILE)
         self.pixel_y = float(grid_y * SCALED_TILE)
 
-        self.name = name  #shranimo ime duhca za algoritme
+        self.name = name  # shranimo ime duhca za algoritme
         self.sprite = sprite
         self.frightened_sprite = pygame.transform.scale(
             pygame.image.load("assets/ghosts/blue_ghost.png").convert_alpha(),
@@ -146,6 +146,7 @@ class Ghost:
         if not choices:
             choices = valid
 
+        # --- FAZA 1: Izračun tarč (Normalni način) ---
         if player:
             player_rect = player.get_rect()
             p_x = player_rect.centerx // SCALED_TILE
@@ -168,19 +169,15 @@ class Ghost:
                     p_dir = getattr(player, "direction", "left")
                     p_dx, p_dy = DIRECTION_VECTORS.get(p_dir, (0, 0))
                     
-                    # pivot 2 polji pred pacmanom
                     pivot_x = p_x + (p_dx * 2)
                     pivot_y = p_y + (p_dy * 2)
 
-                    # vektor od blinky do pivot
                     vec_x = pivot_x - blinky.grid_x
                     vec_y = pivot_y - blinky.grid_y
 
-                    # tarca pivot + vektor
                     tx = pivot_x + vec_x
                     ty = pivot_y + vec_y
                     
-                    # znotraj mape
                     self.current_target = (max(0, min(COLS - 1, tx)), max(0, min(ROWS - 1, ty)))
                 else:
                     self.current_target = (p_x, p_y)
@@ -188,14 +185,12 @@ class Ghost:
             # clyde evklidska razdalja do Pac-Mana
             elif self.name == "clyde":
                 distance = math.sqrt((self.grid_x - p_x) ** 2 + (self.grid_y - p_y) ** 2)
-                
                 if distance > 8:
-                    # Pogumen napada isto ko blinky ce je dalec
                     self.current_target = (p_x, p_y)
                 else:
-                    # ce je blizu bezi na spawn
                     self.current_target = (self.spawn_x, self.spawn_y)
 
+        # --- FAZA 2: Iskanje poti do tarče ---
         if player:
             tx, ty = self.current_target
             best_direction = choices[0]
@@ -238,17 +233,49 @@ class Ghost:
         }
 
         reverse = opposites[self.direction]
-        choices = [d for d in valid if d != reverse] or valid
+        choices = [d for d in valid if d != reverse]
+
+        if not choices:
+            choices = valid
 
         player_rect = player.get_rect()
-        player_grid_x = player_rect.centerx // SCALED_TILE
-        player_grid_y = player_rect.centery // SCALED_TILE
+        p_x = player_rect.centerx // SCALED_TILE
+        p_y = player_rect.centery // SCALED_TILE
 
-        def distance_after_move(direction):
+        # vsi stirje koti
+        corners = [
+            (0, 0),             # Zgoraj levo
+            (COLS - 1, 0),      # Zgoraj desno
+            (0, ROWS - 1),      # Spodaj levo
+            (COLS - 1, ROWS - 1)# Spodaj desno
+        ]
+
+        # kot ki je najdlje od playera
+        best_corner = corners[0]
+        max_corner_dist = -1
+
+        for cx, cy in corners:
+            dist_to_player = math.sqrt((cx - p_x) ** 2 + (cy - p_y) ** 2)
+            if dist_to_player > max_corner_dist:
+                max_corner_dist = dist_to_player
+                best_corner = (cx, cy)
+
+        # nastavi kot kot tarco
+        self.current_target = best_corner
+        tx, ty = self.current_target
+
+        # iskanje best path
+        best_direction = choices[0]
+        min_distance = float('inf')
+
+        for direction in choices:
             next_x, next_y = self._next_tile(direction)
-            return abs(next_x - player_grid_x) + abs(next_y - player_grid_y)
+            distance = math.sqrt((next_x - tx) ** 2 + (next_y - ty) ** 2)
+            if distance < min_distance:
+                min_distance = distance
+                best_direction = direction
 
-        self.direction = max(choices, key=distance_after_move)
+        self.direction = best_direction
 
     def _distance_to_next_center(self):
         dx, dy = DIRECTION_VECTORS[self.direction]
@@ -378,16 +405,19 @@ class Ghost:
             )
 
     def draw_debug(self, surface):
-        if not hasattr(self, "current_target") or self.is_frightened:
+        if not hasattr(self, "current_target"):
             return
 
-        colors = {
-            "blinky": (255, 0, 0),
-            "pinky": (255, 182, 193),
-            "inky": (0, 255, 255),
-            "clyde": (255, 165, 0)
-        }
-        color = colors.get(self.name, (255, 255, 255))
+        if self.is_frightened:
+            color = (0, 0, 255)
+        else:
+            colors = {
+                "blinky": (255, 0, 0),
+                "pinky": (255, 182, 193),
+                "inky": (0, 255, 255),
+                "clyde": (255, 165, 0)
+            }
+            color = colors.get(self.name, (255, 255, 255))
 
         tx, ty = self.current_target
 
