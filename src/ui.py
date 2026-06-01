@@ -18,11 +18,26 @@ class UI:
         title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
         self.screen.blit(title, title_rect)
         
-        play_rect = self.draw_button("PLAY", 250)
-        levels_rect = self.draw_button("LEVELS", 350)
-        exit_rect = self.draw_button("EXIT", 450)
+        play_rect = self.draw_button("PLAY", 220)
+        gamemodes_rect = self.draw_button("GAMEMODES", 290)
+        levels_rect = self.draw_button("LEVELS", 360)
+        exit_rect = self.draw_button("EXIT", 430)
         
-        return play_rect, levels_rect, exit_rect
+        return play_rect, gamemodes_rect, levels_rect, exit_rect
+    
+    def draw_gamemodes_menu(self):
+        self.screen.fill(BLACK)
+        
+        title = self.font_large.render("GAMEMODES", True, YELLOW)
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
+        self.screen.blit(title, title_rect)
+        
+        one_life_rect = self.draw_button("ONE LIFE", 220)
+        hard_mode_rect = self.draw_button("HARD MODE", 300)
+        battle_mode_rect = self.draw_button("BATTLE MODE", 380)
+        back_rect = self.draw_button("BACK", 500)
+        
+        return one_life_rect, hard_mode_rect, battle_mode_rect, back_rect
     
     def draw_levels_menu(self):
         self.screen.fill(BLACK)
@@ -41,7 +56,7 @@ class UI:
     def draw_button(self, text, center_y):
         text_surf = self.font_small.render(text, True, YELLOW)
         
-        button_rect = pygame.Rect(0, 0, 180, 45)
+        button_rect = pygame.Rect(0, 0, 220, 45)
         button_rect.center = (SCREEN_WIDTH // 2, center_y)
         
         pygame.draw.rect(self.screen, BLACK, button_rect, border_radius=5)
