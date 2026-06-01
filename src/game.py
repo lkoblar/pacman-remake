@@ -195,8 +195,6 @@ class Game:
                 self.state = GameState.PLAYING
                 self.audio.play_music()
 
-            elif event.key == pygame.K_m:
-                self.audio.toggle_mute()
 
     def _handle_game_over_events(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -361,7 +359,7 @@ class Game:
             if self.player:
                 self.player.draw(game_surface)
 
-            self.ui.draw_hud(self.score, self.lives, self.score_multiplier)
+            self.ui.draw_hud(self.score, self.lives, self.score_multiplier, self.audio.muted)
 
             if self.state == GameState.PAUSED:
                 resume_rect, menu_rect = self.ui.draw_pause()

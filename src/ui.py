@@ -120,11 +120,17 @@ class UI:
             
             return None, menu_rect
 
-    def draw_hud(self, score, lives, multiplier=1.0):
+    def draw_hud(self, score, lives, multiplier=1.0, muted=False):
         y_poz = 20 
         
         score_surf = self.font_small.render(f"SCORE: {score}", True, (255, 255, 255))
         self.screen.blit(score_surf, (30, y_poz))
+
+        audio_status = "AUDIO: OFF" if muted else "AUDIO: ON"
+
+        audio_surf = self.font_small.render(audio_status, True, WHITE)
+        audio_rect = audio_surf.get_rect(bottomleft=(20, SCREEN_HEIGHT - 10))
+        self.screen.blit(audio_surf, audio_rect)
         
         lives_surf = self.font_small.render(f"LIVES: {lives}", True, (255, 255, 0))
         lives_rect = lives_surf.get_rect(topright=(SCREEN_WIDTH - 30, y_poz))
