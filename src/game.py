@@ -25,6 +25,8 @@ from src.settings import (
     MP_DIVIDER,
     MP_SCREEN_WIDTH,
     MP_LEVEL,
+    MP_DIFFICULTIES,
+    MP_DEFAULT_DIFFICULTY,
 )
 from src.sprite_loader import SpriteLoader
 from src.map import Map
@@ -73,6 +75,7 @@ class Game:
         self.mp_ready1 = False
         self.mp_ready2 = False
         self.mp_countdown = 0.0
+        self.mp_difficulty = MP_DEFAULT_DIFFICULTY
 
     @property
     def frightened_active(self):
@@ -131,8 +134,8 @@ class Game:
         self.state = GameState.MULTIPLAYER_READY
 
     def start_multiplayer(self):
-        self.world1 = PlayerWorld(MP_LEVEL, self.sprite_loader, CONTROLS_WASD, "PLAYER 1")
-        self.world2 = PlayerWorld(MP_LEVEL, self.sprite_loader, CONTROLS_ARROWS, "PLAYER 2")
+        self.world1 = PlayerWorld(MP_LEVEL, self.sprite_loader, CONTROLS_WASD, "PLAYER 1", self.mp_difficulty)
+        self.world2 = PlayerWorld(MP_LEVEL, self.sprite_loader, CONTROLS_ARROWS, "PLAYER 2", self.mp_difficulty)
         self.audio.play_music()
         self.state = GameState.MULTIPLAYER_PLAYING
 
@@ -174,7 +177,7 @@ class Game:
                     if self.buttons.get("play") and self.buttons["play"].collidepoint(mouse_pos):
                         self.start_game()
                     elif self.buttons.get("multiplayer") and self.buttons["multiplayer"].collidepoint(mouse_pos):
-                        self.open_multiplayer_ready()
+                        self.state = GameState.MULTIPLAYER_DIFFICULTY
                     elif self.buttons.get("gamemodes") and self.buttons["gamemodes"].collidepoint(mouse_pos):
                         self.state = GameState.GAMEMODES_SELECT
                     elif self.buttons.get("levels") and self.buttons["levels"].collidepoint(mouse_pos):
@@ -211,6 +214,16 @@ class Game:
                         self.audio.stop_music()
                         self.state = GameState.MENU
 
+                elif self.state == GameState.MULTIPLAYER_DIFFICULTY:
+                    if self.buttons.get("mp_easy") and self.buttons["mp_easy"].collidepoint(mouse_pos):
+                        self.select_multiplayer_difficulty("EASY")
+                    elif self.buttons.get("mp_normal") and self.buttons["mp_normal"].collidepoint(mouse_pos):
+                        self.select_multiplayer_difficulty("NORMAL")
+                    elif self.buttons.get("mp_hard") and self.buttons["mp_hard"].collidepoint(mouse_pos):
+                        self.select_multiplayer_difficulty("HARD")
+                    elif self.buttons.get("mp_diff_back") and self.buttons["mp_diff_back"].collidepoint(mouse_pos):
+                        self.state = GameState.MENU
+
                 elif self.state == GameState.MULTIPLAYER_PAUSED:
                     if self.buttons.get("mp_resume") and self.buttons["mp_resume"].collidepoint(mouse_pos):
                         self.resume_multiplayer_countdown()
@@ -237,6 +250,8 @@ class Game:
                 self._handle_game_over_events(event)
             elif self.state == GameState.LEVEL_COMPLETE:
                 self._handle_level_complete_events(event)
+            elif self.state == GameState.MULTIPLAYER_DIFFICULTY:
+                self._handle_multiplayer_difficulty_events(event)
             elif self.state == GameState.MULTIPLAYER_READY:
                 self._handle_multiplayer_ready_events(event)
             elif self.state == GameState.MULTIPLAYER_PLAYING:
@@ -265,6 +280,16 @@ class Game:
                 self.state = GameState.PAUSED
             elif event.key == pygame.K_m:
                 self.audio.toggle_mute()
+
+    def _handle_multiplayer_difficulty_events(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.state = GameState.MENU
+
+    def select_multiplayer_difficulty(self, difficulty):
+        if difficulty in MP_DIFFICULTIES:
+            self.mp_difficulty = difficulty
+        self.open_multiplayer_ready()
 
     def _handle_multiplayer_ready_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -508,6 +533,13 @@ class Game:
         elif self.state == GameState.GAME_OVER:
             restart_rect = self.ui.draw_game_over(self.score)
             self.buttons["restart"] = restart_rect
+
+        elif self.state == GameState.MULTIPLAYER_DIFFICULTY:
+            easy_rect, normal_rect, hard_rect, back_rect = self.ui.draw_multiplayer_difficulty()
+            self.buttons["mp_easy"] = easy_rect
+            self.buttons["mp_normal"] = normal_rect
+            self.buttons["mp_hard"] = hard_rect
+            self.buttons["mp_diff_back"] = back_rect
 
         elif self.state == GameState.MULTIPLAYER_READY:
             self.ui.draw_multiplayer_ready(self.mp_ready1, self.mp_ready2)

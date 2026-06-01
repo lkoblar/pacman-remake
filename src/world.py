@@ -3,12 +3,13 @@ import time
 
 from src.settings import (
     LEVELS_DIR,
-    PLAYER_LIVES,
     FRIGHTENED_DURATION,
     FRIGHTENED_FLASH_TIME,
     LIVES_SCORE_MULTIPLIERS,
     TIME_BONUS_BASE,
     MAX_TIME_BONUS,
+    MP_DIFFICULTIES,
+    MP_DEFAULT_DIFFICULTY,
 )
 from src.map import Map
 from src.player import Player
@@ -17,10 +18,11 @@ from src.food import FoodManager
 
 
 class PlayerWorld:
-    def __init__(self, level_num, sprite_loader, controls, label):
+    def __init__(self, level_num, sprite_loader, controls, label, difficulty=MP_DEFAULT_DIFFICULTY):
         self.sprite_loader = sprite_loader
         self.controls = controls
         self.label = label
+        self.difficulty = difficulty
 
         level_path = os.path.join(LEVELS_DIR, f"level{level_num}.txt")
         if not os.path.exists(level_path):
@@ -31,8 +33,16 @@ class PlayerWorld:
         self.ghosts = Ghost.create_from_map(self.game_map, sprite_loader)
         self.food_manager = FoodManager(self.game_map, sprite_loader)
 
+        cfg = MP_DIFFICULTIES.get(difficulty, MP_DIFFICULTIES[MP_DEFAULT_DIFFICULTY])
+
         self.score = 0
-        self.lives = PLAYER_LIVES
+        self.lives = cfg["lives"]
+
+        self.player.speed *= cfg["player_speed"]
+        for ghost in self.ghosts:
+            ghost.normal_speed *= cfg["ghost_speed"]
+            ghost.frightened_speed *= cfg["ghost_speed"]
+            ghost.speed = ghost.normal_speed
 
         self.frightened_timer = 0.0
         self.ghost_eat_score = 200

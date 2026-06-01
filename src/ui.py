@@ -11,6 +11,7 @@ class UI:
     def __init__(self, screen):
         self.screen = screen
         self.font_name = "Courier New"
+        self.font_tiny = pygame.font.SysFont(self.font_name, 20, bold=True)
         self.font_small = pygame.font.SysFont(self.font_name, 30, bold=True)
         self.font_large = pygame.font.SysFont(self.font_name, 45, bold=True)
         self.font_huge = pygame.font.SysFont(self.font_name, 140, bold=True)
@@ -57,6 +58,69 @@ class UI:
         back_rect = self.draw_button("BACK", 500)
         
         return lvl1_rect, lvl2_rect, lvl3_rect, back_rect
+
+    def draw_multiplayer_difficulty(self):
+        self.screen.fill(BLACK)
+
+        title = self.font_large.render("DIFFICULTY", True, YELLOW)
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
+        self.screen.blit(title, title_rect)
+
+        easy_rect = self.draw_button("EASY", 220)
+        normal_rect = self.draw_button("NORMAL", 300)
+        hard_rect = self.draw_button("HARD", 380)
+        back_rect = self.draw_button("BACK", 500)
+
+        self._draw_difficulty_info()
+
+        return easy_rect, normal_rect, hard_rect, back_rect
+
+    def _draw_difficulty_info(self):
+        rows = [
+            ("EASY", "5", "SLOW", GREEN),
+            ("NORMAL", "3", "NORMAL", YELLOW),
+            ("HARD", "1", "FAST", RED),
+        ]
+
+        panel_w = 540
+        header_h = 50
+        row_h = 54
+        panel_h = header_h + row_h * len(rows) + 24
+        panel_x = (SCREEN_WIDTH - panel_w) // 2
+        panel_y = 575
+
+        panel_rect = pygame.Rect(panel_x, panel_y, panel_w, panel_h)
+        pygame.draw.rect(self.screen, (16, 16, 32), panel_rect, border_radius=10)
+        pygame.draw.rect(self.screen, BLUE, panel_rect, width=2, border_radius=10)
+
+        col_mode = panel_x + 110
+        col_lives = panel_x + 330
+        col_ghosts = panel_x + 455
+
+        header_y = panel_y + header_h // 2
+        for label, cx in (("MODE", col_mode), ("LIVES", col_lives), ("GHOSTS", col_ghosts)):
+            h_surf = self.font_tiny.render(label, True, GRAY)
+            self.screen.blit(h_surf, h_surf.get_rect(center=(cx, header_y)))
+
+        pygame.draw.line(
+            self.screen, (60, 60, 90),
+            (panel_x + 18, panel_y + header_h),
+            (panel_x + panel_w - 18, panel_y + header_h),
+            1,
+        )
+
+        y = panel_y + header_h + row_h // 2 + 4
+        for name, lives, ghosts, color in rows:
+            name_surf = self.font_small.render(name, True, color)
+            self.screen.blit(name_surf, name_surf.get_rect(center=(col_mode, y)))
+
+            lives_surf = self.font_small.render(lives, True, WHITE)
+            self.screen.blit(lives_surf, lives_surf.get_rect(center=(col_lives, y)))
+
+            ghosts_surf = self.font_tiny.render(ghosts, True, WHITE)
+            self.screen.blit(ghosts_surf, ghosts_surf.get_rect(center=(col_ghosts, y)))
+
+            y += row_h
 
     def draw_button(self, text, center_y):
         text_surf = self.font_small.render(text, True, YELLOW)
