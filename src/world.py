@@ -11,9 +11,12 @@ from src.settings import (
     MAX_TIME_BONUS,
     MP_DIFFICULTIES,
     MP_DEFAULT_DIFFICULTY,
-    COOP_LIVES,
     COOP_P1_TINT,
     COOP_P2_TINT,
+    COOP_DIFFICULTIES,
+    COOP_DEFAULT_DIFFICULTY,
+    COOP_DEFAULT_LIVES,
+    COOP_DEFAULT_LIVES_MODE,
 )
 from src.map import Map
 from src.player import Player
@@ -155,8 +158,13 @@ class PlayerWorld:
 
 
 class CoopWorld:
-    def __init__(self, level_name, sprite_loader, control_specs):
+    def __init__(self, level_name, sprite_loader, control_specs, config=None):
         self.sprite_loader = sprite_loader
+
+        config = config or {}
+        self.lives_mode = config.get("lives_mode", COOP_DEFAULT_LIVES_MODE)
+        self.difficulty = config.get("difficulty", COOP_DEFAULT_DIFFICULTY)
+        lives_count = config.get("lives", COOP_DEFAULT_LIVES)
 
         level_path = os.path.join(LEVELS_DIR, f"{level_name}.txt")
         if not os.path.exists(level_path):
@@ -177,10 +185,26 @@ class CoopWorld:
             self.controls.append(controls)
             self.labels.append(label)
 
-        self.lives = [COOP_LIVES for _ in self.players]
+        self.shared = self.lives_mode == "shared"
+        if self.shared:
+            self.shared_lives = lives_count
+            self.lives = [lives_count for _ in self.players]
+        else:
+            self.shared_lives = 0
+            self.lives = [lives_count for _ in self.players]
+
+        self.hard = self.difficulty == "HARD"
 
         self.ghosts = Ghost.create_from_map(self.game_map, sprite_loader)
         self.food_manager = FoodManager(self.game_map, sprite_loader)
+
+        ghost_speed = COOP_DIFFICULTIES.get(
+            self.difficulty, COOP_DIFFICULTIES[COOP_DEFAULT_DIFFICULTY]
+        )["ghost_speed"]
+        for ghost in self.ghosts:
+            ghost.normal_speed *= ghost_speed
+            ghost.frightened_speed *= ghost_speed
+            ghost.speed = ghost.normal_speed
 
         self.score = 0
         self.frightened_timer = 0.0
@@ -283,21 +307,66 @@ class CoopWorld:
                     continue
 
                 idx = self.players.index(player)
-                self.lives[idx] -= 1
+                audio.play_sound("death")
 
-                if self.lives[idx] <= 0:
-                    audio.play_sound("death")
-                    player.dead = True
+                if self.shared:
+                    self.shared_lives -= 1
+                    if self.shared_lives <= 0:
+                        self.shared_lives = 0
+                        for p in self.players:
+                            p.dead = True
+                    else:
+                        player.reset_position()
+                        for g in self.ghosts:
+                            g.reset_position()
                 else:
-                    audio.play_sound("death")
-                    player.reset_position()
-                    for g in self.ghosts:
-                        g.reset_position()
+                    self.lives[idx] -= 1
+                    if self.lives[idx] <= 0:
+                        self.lives[idx] = 0
+                        player.dead = True
+                    else:
+                        player.reset_position()
+                        for g in self.ghosts:
+                            g.reset_position()
                 break
+
+        if self.hard:
+            self._check_player_collision(audio)
 
         if all(p.dead for p in self.players):
             self.finished = True
             self.result = "lose"
+
+    def _check_player_collision(self, audio):
+        if len(self.players) < 2:
+            return
+
+        p1, p2 = self.players[0], self.players[1]
+        if p1.dead or p2.dead:
+            return
+        if not p1.get_rect().colliderect(p2.get_rect()):
+            return
+
+        audio.play_sound("death")
+
+        if self.shared:
+            self.shared_lives -= 1
+            if self.shared_lives <= 0:
+                self.shared_lives = 0
+                for p in self.players:
+                    p.dead = True
+            else:
+                for p in self.players:
+                    p.reset_position()
+            return
+
+        for i, p in enumerate(self.players):
+            self.lives[i] -= 1
+            if self.lives[i] <= 0:
+                self.lives[i] = 0
+                p.dead = True
+            else:
+                p.reset_position()
 
     def render(self, surface):
         if self.game_map:

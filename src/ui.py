@@ -416,11 +416,16 @@ class UI:
 
         return battle_rect, coop_rect, back_rect
 
-    def draw_coop_hud(self, score, lives1, lives2, screen_width):
+    def draw_coop_hud(self, score, screen_width, shared=False, lives1=0, lives2=0, shared_lives=0):
         y_poz = 12
 
         score_surf = self.font_small.render(f"SCORE: {score}", True, WHITE)
         self.screen.blit(score_surf, score_surf.get_rect(midtop=(screen_width // 2, y_poz)))
+
+        if shared:
+            team_surf = self.font_small.render(f"TEAM LIVES: {shared_lives}", True, CYAN)
+            self.screen.blit(team_surf, (20, y_poz))
+            return
 
         l1_text = f"P1: {lives1}" if lives1 > 0 else "P1: OUT"
         l1_surf = self.font_small.render(l1_text, True, YELLOW)
@@ -430,6 +435,73 @@ class UI:
         l2_surf = self.font_small.render(l2_text, True, GREEN)
         l2_rect = l2_surf.get_rect(topright=(screen_width - 20, y_poz))
         self.screen.blit(l2_surf, l2_rect)
+
+    def _draw_option_button(self, text, center_x, center_y, selected, width=150, height=45):
+        rect = pygame.Rect(0, 0, width, height)
+        rect.center = (center_x, center_y)
+
+        if selected:
+            pygame.draw.rect(self.screen, (10, 40, 16), rect, border_radius=5)
+            pygame.draw.rect(self.screen, GREEN, rect, width=3, border_radius=5)
+            text_color = WHITE
+        else:
+            pygame.draw.rect(self.screen, BLACK, rect, border_radius=5)
+            pygame.draw.rect(self.screen, BLUE, rect, width=3, border_radius=5)
+            text_color = YELLOW
+
+        text_surf = self.font_small.render(text, True, text_color)
+        self.screen.blit(text_surf, text_surf.get_rect(center=rect.center))
+        return rect
+
+    def _draw_section_label(self, text, center_y):
+        surf = self.font_tiny.render(text, True, GRAY)
+        self.screen.blit(surf, surf.get_rect(center=(SCREEN_WIDTH // 2, center_y)))
+
+    def draw_coop_config(self, lives_mode, lives, difficulty):
+        self.screen.fill(BLACK)
+        cx = SCREEN_WIDTH // 2
+
+        title = self.font_large.render("CO-OP SETUP", True, YELLOW)
+        self.screen.blit(title, title.get_rect(center=(cx, 80)))
+
+        buttons = {}
+
+        self._draw_section_label("LIVES", 165)
+        buttons["mode_separate"] = self._draw_option_button(
+            "SEPARATE", cx - 95, 210, lives_mode == "separate", width=175
+        )
+        buttons["mode_shared"] = self._draw_option_button(
+            "SHARED", cx + 95, 210, lives_mode == "shared", width=175
+        )
+
+        self._draw_section_label("COUNT", 285)
+        for i, value in enumerate((1, 3, 5)):
+            x = cx + (i - 1) * 130
+            buttons[f"lives_{value}"] = self._draw_option_button(
+                str(value), x, 330, lives == value, width=100
+            )
+
+        self._draw_section_label("DIFFICULTY", 405)
+        for i, name in enumerate(("EASY", "NORMAL", "HARD")):
+            x = cx + (i - 1) * 175
+            buttons[f"diff_{name}"] = self._draw_option_button(
+                name, x, 450, difficulty == name, width=160
+            )
+
+        info = [
+            "EASY/NORMAL/HARD = ghost speed",
+            "HARD: players collide -> lose a life",
+        ]
+        y = 520
+        for line in info:
+            line_surf = self.font_tiny.render(line, True, CYAN)
+            self.screen.blit(line_surf, line_surf.get_rect(center=(cx, y)))
+            y += 30
+
+        buttons["start"] = self.draw_button("START", 620)
+        buttons["back"] = self.draw_button("BACK", 690)
+
+        return buttons
 
     def draw_coop_result(self, score, result):
         self.screen.fill(BLACK)

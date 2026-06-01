@@ -30,6 +30,10 @@ from src.settings import (
     COOP_LEVEL,
     COOP_SCREEN_WIDTH,
     COOP_SCREEN_HEIGHT,
+    COOP_DIFFICULTIES,
+    COOP_DEFAULT_DIFFICULTY,
+    COOP_DEFAULT_LIVES,
+    COOP_DEFAULT_LIVES_MODE,
 )
 from src.sprite_loader import SpriteLoader
 from src.map import Map
@@ -81,6 +85,9 @@ class Game:
         self.mp_difficulty = MP_DEFAULT_DIFFICULTY
         self.mp_mode = "battle"
         self.coop_world = None
+        self.coop_lives_mode = COOP_DEFAULT_LIVES_MODE
+        self.coop_lives = COOP_DEFAULT_LIVES
+        self.coop_difficulty = COOP_DEFAULT_DIFFICULTY
 
     @property
     def frightened_active(self):
@@ -163,6 +170,11 @@ class Game:
             COOP_LEVEL,
             self.sprite_loader,
             [(CONTROLS_WASD, "PLAYER 1"), (CONTROLS_ARROWS, "PLAYER 2")],
+            config={
+                "lives_mode": self.coop_lives_mode,
+                "lives": self.coop_lives,
+                "difficulty": self.coop_difficulty,
+            },
         )
         self.coop_world.level_start_time = time.time()
         self.audio.play_music()
@@ -250,9 +262,12 @@ class Game:
                         self.state = GameState.MULTIPLAYER_DIFFICULTY
                     elif self.buttons.get("mp_coop") and self.buttons["mp_coop"].collidepoint(mouse_pos):
                         self.mp_mode = "coop"
-                        self.open_multiplayer_ready()
+                        self.state = GameState.COOP_CONFIG
                     elif self.buttons.get("mp_mode_back") and self.buttons["mp_mode_back"].collidepoint(mouse_pos):
                         self.state = GameState.MENU
+
+                elif self.state == GameState.COOP_CONFIG:
+                    self._handle_coop_config_click(mouse_pos)
 
                 elif self.state == GameState.MULTIPLAYER_DIFFICULTY:
                     if self.buttons.get("mp_easy") and self.buttons["mp_easy"].collidepoint(mouse_pos):
@@ -294,6 +309,8 @@ class Game:
                 self._handle_multiplayer_mode_select_events(event)
             elif self.state == GameState.MULTIPLAYER_DIFFICULTY:
                 self._handle_multiplayer_difficulty_events(event)
+            elif self.state == GameState.COOP_CONFIG:
+                self._handle_coop_config_events(event)
             elif self.state == GameState.MULTIPLAYER_READY:
                 self._handle_multiplayer_ready_events(event)
             elif self.state == GameState.MULTIPLAYER_PLAYING:
@@ -337,6 +354,33 @@ class Game:
         if difficulty in MP_DIFFICULTIES:
             self.mp_difficulty = difficulty
         self.open_multiplayer_ready()
+
+    def _handle_coop_config_events(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.state = GameState.MULTIPLAYER_MODE_SELECT
+
+    def _handle_coop_config_click(self, mouse_pos):
+        if self.buttons.get("mode_separate") and self.buttons["mode_separate"].collidepoint(mouse_pos):
+            self.coop_lives_mode = "separate"
+        elif self.buttons.get("mode_shared") and self.buttons["mode_shared"].collidepoint(mouse_pos):
+            self.coop_lives_mode = "shared"
+        elif self.buttons.get("lives_1") and self.buttons["lives_1"].collidepoint(mouse_pos):
+            self.coop_lives = 1
+        elif self.buttons.get("lives_3") and self.buttons["lives_3"].collidepoint(mouse_pos):
+            self.coop_lives = 3
+        elif self.buttons.get("lives_5") and self.buttons["lives_5"].collidepoint(mouse_pos):
+            self.coop_lives = 5
+        elif self.buttons.get("diff_EASY") and self.buttons["diff_EASY"].collidepoint(mouse_pos):
+            self.coop_difficulty = "EASY"
+        elif self.buttons.get("diff_NORMAL") and self.buttons["diff_NORMAL"].collidepoint(mouse_pos):
+            self.coop_difficulty = "NORMAL"
+        elif self.buttons.get("diff_HARD") and self.buttons["diff_HARD"].collidepoint(mouse_pos):
+            self.coop_difficulty = "HARD"
+        elif self.buttons.get("start") and self.buttons["start"].collidepoint(mouse_pos):
+            self.open_multiplayer_ready()
+        elif self.buttons.get("back") and self.buttons["back"].collidepoint(mouse_pos):
+            self.state = GameState.MULTIPLAYER_MODE_SELECT
 
     def _handle_multiplayer_ready_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -608,6 +652,12 @@ class Game:
             self.buttons["mp_hard"] = hard_rect
             self.buttons["mp_diff_back"] = back_rect
 
+        elif self.state == GameState.COOP_CONFIG:
+            coop_buttons = self.ui.draw_coop_config(
+                self.coop_lives_mode, self.coop_lives, self.coop_difficulty
+            )
+            self.buttons.update(coop_buttons)
+
         elif self.state == GameState.MULTIPLAYER_READY:
             title = "CO-OP" if self.mp_mode == "coop" else "MULTIPLAYER"
             self.ui.draw_multiplayer_ready(self.mp_ready1, self.mp_ready2, title)
@@ -687,4 +737,11 @@ class Game:
 
         lives1 = self.coop_world.lives[0] if len(self.coop_world.lives) > 0 else 0
         lives2 = self.coop_world.lives[1] if len(self.coop_world.lives) > 1 else 0
-        self.ui.draw_coop_hud(self.coop_world.score, lives1, lives2, COOP_SCREEN_WIDTH)
+        self.ui.draw_coop_hud(
+            self.coop_world.score,
+            COOP_SCREEN_WIDTH,
+            shared=self.coop_world.shared,
+            lives1=lives1,
+            lives2=lives2,
+            shared_lives=self.coop_world.shared_lives,
+        )
