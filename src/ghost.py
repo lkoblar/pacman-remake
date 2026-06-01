@@ -43,6 +43,8 @@ class Ghost:
         self.respawn_freeze_timer = 0.0
 
         self.direction = random.choice(list(DIRECTION_VECTORS.keys()))
+        
+        self.current_target = (grid_x, grid_y)
 
     @classmethod
     def create_from_map(cls, game_map, sprite_loader):
@@ -54,10 +56,11 @@ class Ghost:
         for i, (x, y) in enumerate(positions):
             sprite = None
             name = sprite_names[i % len(sprite_names)]
+            
             if sprite_loader and hasattr(sprite_loader, "ghost_sprites"):
+                name = sprite_names[i % len(sprite_names)]
                 sprite = sprite_loader.ghost_sprites.get(name)
             
-            # podano ime v konstruktor
             ghosts.append(cls(x, y, name, sprite))
 
         return ghosts
@@ -72,6 +75,7 @@ class Ghost:
         self.flash_white = False
         self.ignore_frightened = False
         self.respawn_freeze_timer = 0.0
+        self.current_target = (self.spawn_x, self.spawn_y)
 
     def send_to_spawn(self):
         self.grid_x = self.spawn_x
@@ -83,6 +87,7 @@ class Ghost:
         self.flash_white = False
         self.ignore_frightened = True
         self.respawn_freeze_timer = RESPAWN_FREEZE_DURATION
+        self.current_target = (self.spawn_x, self.spawn_y)
 
     def allow_frightened_again(self):
         self.ignore_frightened = False
@@ -120,7 +125,11 @@ class Ghost:
                 valid.append(direction)
         return valid
 
-    def _choose_direction(self, game_map, player=None):
+    def _choose_direction(self, game_map, player=None, all_ghosts=None):
+        if self.name == "clyde":
+            self.current_target = (self.spawn_x, self.spawn_y)
+            return
+
         if self.grid_x < 0 or self.grid_x >= COLS or self.grid_y < 0 or self.grid_y >= ROWS:
             return
 
@@ -136,59 +145,65 @@ class Ghost:
         }
 
         reverse = opposites[self.direction]
-        # da se ne obrnejo za 180
         choices = [d for d in valid if d != reverse]
 
         if not choices:
             choices = valid
 
-        # ce je blinky izracunamo novo tarco glede na player
-        if self.name == "blinky" and player:
+        if player:
             player_rect = player.get_rect()
-            target_x = player_rect.centerx // SCALED_TILE
-            target_y = player_rect.centery // SCALED_TILE
+            p_x = player_rect.centerx // SCALED_TILE
+            p_y = player_rect.centery // SCALED_TILE
 
+            # blinky direkt na igralca
+            if self.name == "blinky":
+                self.current_target = (p_x, p_y)
+
+            # pinky 4 polja naprej od igralca 
+            elif self.name == "pinky":
+                p_dir = getattr(player, "direction", "left")
+                p_dx, p_dy = DIRECTION_VECTORS.get(p_dir, (0, 0))
+                self.current_target = (p_x + (p_dx * 4), p_y + (p_dy * 4))
+
+            # inky vektor od blinky skozi player pivot
+            elif self.name == "inky" and all_ghosts:
+                blinky = next((g for g in all_ghosts if g.name == "blinky"), None)
+                if blinky:
+                    p_dir = getattr(player, "direction", "left")
+                    p_dx, p_dy = DIRECTION_VECTORS.get(p_dir, (0, 0))
+                    
+                    # pivot 2 polji pred pacmanom
+                    pivot_x = p_x + (p_dx * 2)
+                    pivot_y = p_y + (p_dy * 2)
+
+                    # vektor od blinky do pivot
+                    vec_x = pivot_x - blinky.grid_x
+                    vec_y = pivot_y - blinky.grid_y
+
+                    # tarca pivot + vektor
+                    tx = pivot_x + vec_x
+                    ty = pivot_y + vec_y
+                    
+                    # znotraj mape
+                    self.current_target = (max(0, min(COLS - 1, tx)), max(0, min(ROWS - 1, ty)))
+                else:
+                    self.current_target = (p_x, p_y)
+
+        # iskanje poti do tarce
+        if player:
+            tx, ty = self.current_target
             best_direction = choices[0]
             min_distance = float('inf')
 
-            # evklidska razdalija - najblizja pot 
             for direction in choices:
                 next_x, next_y = self._next_tile(direction)
-                distance = math.sqrt((next_x - target_x) ** 2 + (next_y - target_y) ** 2)
+                distance = math.sqrt((next_x - tx) ** 2 + (next_y - ty) ** 2)
                 if distance < min_distance:
                     min_distance = distance
                     best_direction = direction
         
             self.direction = best_direction
-
-        elif self.name == "pinky" and player:
-            player_rect = player.get_rect()
-            p_x = player_rect.centerx // SCALED_TILE
-            p_y = player_rect.centery // SCALED_TILE
-
-            # smer kam je player obrjen
-            p_dir = getattr(player, "direction", "left")
             
-            # vektor smeri
-            p_dx, p_dy = DIRECTION_VECTORS.get(p_dir, (0, 0))
-
-            # pinky cilja 4 polja naprej v isto smer
-            target_x = p_x + (p_dx * 4)
-            target_y = p_y + (p_dy * 4)
-
-            # najbolsa pot do tarce
-            best_direction = choices[0]
-            min_distance = float('inf')
-
-            for direction in choices:
-                next_x, next_y = self._next_tile(direction)
-                distance = math.sqrt((next_x - target_x) ** 2 + (next_y - target_y) ** 2)
-                if distance < min_distance:
-                    min_distance = distance
-                    best_direction = direction
-
-            self.direction = best_direction
-
         else:
             if self.direction in valid and len(valid) == 1:
                 return
@@ -264,7 +279,7 @@ class Ghost:
             self.pixel_y -= world_height
             self.grid_y = 0
 
-    def update(self, dt, game_map, player=None, frightened=False, flash=False):
+    def update(self, dt, game_map, player=None, frightened=False, flash=False, all_ghosts=None):
         active_frightened = frightened and not self.ignore_frightened
 
         self.is_frightened = active_frightened
@@ -283,7 +298,7 @@ class Ghost:
                 if self.is_frightened:
                     self._choose_frightened_direction(game_map, player)
                 else:
-                    self._choose_direction(game_map, player)
+                    self._choose_direction(game_map, player, all_ghosts)
 
         while remaining > 0:
             if self._at_tile_center():
@@ -292,7 +307,7 @@ class Ghost:
                     if self.is_frightened:
                         self._choose_frightened_direction(game_map, player)
                     else:
-                        self._choose_direction(game_map, player)
+                        self._choose_direction(game_map, player, all_ghosts)
 
                 if not self._can_move_from_tile(self.grid_x, self.grid_y, self.direction, game_map):
                     return
@@ -315,7 +330,7 @@ class Ghost:
                         if self.is_frightened:
                             self._choose_frightened_direction(game_map, player)
                         else:
-                            self._choose_direction(game_map, player)
+                            self._choose_direction(game_map, player, all_ghosts)
 
             self._wrap_tunnel()
 
@@ -355,3 +370,34 @@ class Ghost:
                 (255, 0, 0),
                 (int(self.pixel_x), int(self.pixel_y), SCALED_TILE, SCALED_TILE),
             )
+
+    def draw_debug(self, surface):
+        if not hasattr(self, "current_target") or self.is_frightened:
+            return
+
+        colors = {
+            "blinky": (255, 0, 0),
+            "pinky": (255, 182, 193),
+            "inky": (0, 255, 255),
+            "clyde": (255, 165, 0)
+        }
+        color = colors.get(self.name, (255, 255, 255))
+
+        tx, ty = self.current_target
+
+        pygame.draw.rect(
+            surface,
+            color,
+            (tx * SCALED_TILE + 2, ty * SCALED_TILE + 2, SCALED_TILE - 4, SCALED_TILE - 4),
+            2
+        )
+
+        start_pixel = (
+            int(self.pixel_x) + SCALED_TILE // 2,
+            int(self.pixel_y) + SCALED_TILE // 2
+        )
+        end_pixel = (
+            tx * SCALED_TILE + SCALED_TILE // 2,
+            ty * SCALED_TILE + SCALED_TILE // 2
+        )
+        pygame.draw.line(surface, color, start_pixel, end_pixel, 1)

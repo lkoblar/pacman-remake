@@ -262,6 +262,7 @@ class Game:
                 self.player,
                 self.frightened_active,
                 flash,
+                self.ghosts
             )
 
         if self.food_manager and self.player:
@@ -350,6 +351,7 @@ class Game:
 
             for ghost in self.ghosts:
                 ghost.draw(game_surface)
+            #   ghost.draw_debug(self.screen)
             if self.player:
                 self.player.draw(game_surface)
 
