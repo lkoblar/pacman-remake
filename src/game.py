@@ -117,10 +117,23 @@ class Game:
                 if self.state == GameState.MENU:
                     if self.buttons.get("play") and self.buttons["play"].collidepoint(mouse_pos):
                         self.start_game()
+                    elif self.buttons.get("gamemodes") and self.buttons["gamemodes"].collidepoint(mouse_pos):
+                        self.state = GameState.GAMEMODES_SELECT
                     elif self.buttons.get("levels") and self.buttons["levels"].collidepoint(mouse_pos):
                         self.state = GameState.LEVEL_SELECT
                     elif self.buttons.get("exit") and self.buttons["exit"].collidepoint(mouse_pos):
                         self.running = False
+
+                elif self.state == GameState.GAMEMODES_SELECT:
+                    if self.buttons.get("one_life") and self.buttons["one_life"].collidepoint(mouse_pos):
+                        self.lives = 1
+                        self.start_game()
+                    elif self.buttons.get("hard_mode") and self.buttons["hard_mode"].collidepoint(mouse_pos):
+                        self.start_game()
+                    elif self.buttons.get("battle_mode") and self.buttons["battle_mode"].collidepoint(mouse_pos):
+                        self.start_game()
+                    elif self.buttons.get("back") and self.buttons["back"].collidepoint(mouse_pos):
+                        self.state = GameState.MENU
 
                 elif self.state == GameState.LEVEL_SELECT:
                     if self.buttons.get("lvl1") and self.buttons["lvl1"].collidepoint(mouse_pos):
@@ -142,6 +155,8 @@ class Game:
 
             if self.state == GameState.MENU:
                 self._handle_menu_events(event)
+            elif self.state == GameState.GAMEMODES_SELECT:
+                self._handle_level_select_events(event)
             elif self.state == GameState.LEVEL_SELECT:
                 self._handle_level_select_events(event)
             elif self.state == GameState.PLAYING:
@@ -247,6 +262,7 @@ class Game:
                 self.player,
                 self.frightened_active,
                 flash,
+                self.ghosts
             )
 
         if self.food_manager and self.player:
@@ -305,10 +321,18 @@ class Game:
         self.screen.fill(BLACK)
 
         if self.state == GameState.MENU:
-            play_rect, levels_rect, exit_rect = self.ui.draw_menu()
+            play_rect, gamemodes_rect, levels_rect, exit_rect = self.ui.draw_menu()
             self.buttons["play"] = play_rect
+            self.buttons["gamemodes"] = gamemodes_rect
             self.buttons["levels"] = levels_rect
             self.buttons["exit"] = exit_rect
+
+        elif self.state == GameState.GAMEMODES_SELECT:
+            ol, hm, bm, b = self.ui.draw_gamemodes_menu()
+            self.buttons["one_life"] = ol
+            self.buttons["hard_mode"] = hm
+            self.buttons["battle_mode"] = bm
+            self.buttons["back"] = b
 
         elif self.state == GameState.LEVEL_SELECT:
             l1, l2, l3, b = self.ui.draw_levels_menu()
@@ -318,15 +342,18 @@ class Game:
             self.buttons["back"] = b
 
         elif self.state in (GameState.PLAYING, GameState.PAUSED):
+            game_surface = self.screen.subsurface((0, 50, SCREEN_WIDTH, SCREEN_HEIGHT - 50))
+
             if self.game_map:
-                self.game_map.render(self.screen)
+                self.game_map.render(game_surface)
             if self.food_manager:
-                self.food_manager.render(self.screen)
+                self.food_manager.render(game_surface)
 
             for ghost in self.ghosts:
-                ghost.draw(self.screen)
+                ghost.draw(game_surface)
+#                ghost.draw_debug(self.screen)
             if self.player:
-                self.player.draw(self.screen)
+                self.player.draw(game_surface)
 
             self.ui.draw_hud(self.score, self.lives, self.score_multiplier)
 
