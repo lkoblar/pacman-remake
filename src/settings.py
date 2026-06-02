@@ -53,3 +53,9 @@ FRIGHTENED_FLASH_TIME = 2.0
 LIVES_SCORE_MULTIPLIERS = {3: 1.5, 2: 1.0, 1: 0.5}
 TIME_BONUS_BASE = 30000
 MAX_TIME_BONUS = 2000
+
+DIFFICULTY_PRESETS = {
+    "Easy":   {"ghost_speed_mult": 2.0, "frightened_duration": 10.0, "respawn_freeze": 1.5},
+    "Normal": {"ghost_speed_mult": 3.0, "frightened_duration": 7.0,  "respawn_freeze": 0.75},
+    "Hard":   {"ghost_speed_mult": 4.0, "frightened_duration": 4.0,  "respawn_freeze": 0.3},
+}

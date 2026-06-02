@@ -41,6 +41,7 @@ class Ghost:
         self.flash_white = False
         self.ignore_frightened = False
         self.respawn_freeze_timer = 0.0
+        self.respawn_freeze_duration = RESPAWN_FREEZE_DURATION
 
         self.direction = random.choice(list(DIRECTION_VECTORS.keys()))
         
@@ -86,7 +87,7 @@ class Ghost:
         self.is_frightened = False
         self.flash_white = False
         self.ignore_frightened = True
-        self.respawn_freeze_timer = RESPAWN_FREEZE_DURATION
+        self.respawn_freeze_timer = self.respawn_freeze_duration
         self.current_target = (self.spawn_x, self.spawn_y)
 
     def allow_frightened_again(self):
