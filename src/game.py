@@ -849,7 +849,7 @@ class Game:
 
         board_height = COOP_SCREEN_HEIGHT - 50
         board_surface = self.screen.subsurface((0, 50, COOP_SCREEN_WIDTH, board_height))
-        #self.coop_world.render(board_surface, self.training_mode)
+        self.coop_world.render(board_surface, self.training_mode)
 
         lives1 = self.coop_world.lives[0] if len(self.coop_world.lives) > 0 else 0
         lives2 = self.coop_world.lives[1] if len(self.coop_world.lives) > 1 else 0
