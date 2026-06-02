@@ -52,7 +52,12 @@ from src.world import PlayerWorld, CoopWorld
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.fullscreen = False
+        self.logical_size = (SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.display = pygame.display.set_mode(self.logical_size, pygame.RESIZABLE)
+        self.screen = pygame.Surface(self.logical_size).convert()
+        self._view_scale = 1.0
+        self._view_offset = (0, 0)
         pygame.display.set_caption("Pac-Man Remake")
         self.clock = pygame.time.Clock()
         self.running = True
@@ -173,17 +178,68 @@ class Game:
         self.selected_lives = cfg["lives"]
         self.select_level(self.pending_level)
 
+    def _set_logical_size(self, size):
+        self.logical_size = size
+        self.screen = pygame.Surface(size).convert()
+        if getattr(self, "ui", None) is not None:
+            self.ui.screen = self.screen
+        if not self.fullscreen:
+            self._make_windowed(size)
+
+    def _make_windowed(self, size):
+        self.display = pygame.display.set_mode(size, pygame.RESIZABLE)
+
+    def toggle_fullscreen(self):
+        self.fullscreen = not self.fullscreen
+        if self.fullscreen:
+            try:
+                self.display = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            except pygame.error:
+                self.fullscreen = False
+                self._make_windowed(self.logical_size)
+        else:
+            self._make_windowed(self.logical_size)
+
+    def _is_fullscreen_toggle(self, event):
+        if event.key in (pygame.K_F11, pygame.K_f):
+            return True
+        if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            mods = pygame.key.get_mods()
+            return bool(mods & (pygame.KMOD_ALT | pygame.KMOD_GUI | pygame.KMOD_META))
+        return False
+
+    def _present(self):
+        dw, dh = self.display.get_size()
+        lw, lh = self.screen.get_size()
+        scale = min(dw / lw, dh / lh)
+        tw, th = max(1, int(lw * scale)), max(1, int(lh * scale))
+        offset = ((dw - tw) // 2, (dh - th) // 2)
+
+        self._view_scale = scale
+        self._view_offset = offset
+
+        if (tw, th) == (lw, lh):
+            scaled = self.screen
+        else:
+            scaled = pygame.transform.scale(self.screen, (tw, th))
+
+        self.display.fill(BLACK)
+        self.display.blit(scaled, offset)
+        pygame.display.flip()
+
+    def _to_logical(self, pos):
+        ox, oy = self._view_offset
+        scale = self._view_scale or 1.0
+        return ((pos[0] - ox) / scale, (pos[1] - oy) / scale)
+
     def _enter_multiplayer_screen(self):
-        self.screen = pygame.display.set_mode((MP_SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.ui.screen = self.screen
+        self._set_logical_size((MP_SCREEN_WIDTH, SCREEN_HEIGHT))
 
     def _enter_coop_screen(self):
-        self.screen = pygame.display.set_mode((COOP_SCREEN_WIDTH, COOP_SCREEN_HEIGHT))
-        self.ui.screen = self.screen
+        self._set_logical_size((COOP_SCREEN_WIDTH, COOP_SCREEN_HEIGHT))
 
     def _exit_to_menu_screen(self):
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.ui.screen = self.screen
+        self._set_logical_size((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     def open_multiplayer_ready(self):
         self.mp_ready1 = False
@@ -258,8 +314,16 @@ class Game:
                 self.running = False
                 return
 
+            if event.type == pygame.KEYDOWN and self._is_fullscreen_toggle(event):
+                self.toggle_fullscreen()
+                continue
+
+            if event.type == pygame.VIDEORESIZE and not self.fullscreen:
+                self.display = pygame.display.set_mode(event.size, pygame.RESIZABLE)
+                continue
+
             if event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = event.pos
+                mouse_pos = self._to_logical(event.pos)
                 if self.state == GameState.MENU:
                     if self.buttons.get("play") and self.buttons["play"].collidepoint(mouse_pos):
                         self.open_play_difficulty()
@@ -472,7 +536,7 @@ class Game:
     def _handle_game_over_events(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                mouse_pos = event.pos
+                mouse_pos = self._to_logical(event.pos)
                 if self.buttons.get("restart") and self.buttons["restart"].collidepoint(mouse_pos):
                     self.score = 0
                     self.lives = self.selected_lives
@@ -494,7 +558,7 @@ class Game:
     def _handle_level_complete_events(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                mouse_pos = event.pos
+                mouse_pos = self._to_logical(event.pos)
 
                 if self.buttons.get("next_level") and self.buttons["next_level"].collidepoint(mouse_pos):
                     self.current_level += 1
@@ -736,7 +800,7 @@ class Game:
             self.buttons["mp_again"] = again_rect
             self.buttons["mp_menu"] = menu_rect
 
-        pygame.display.flip()
+        self._present()
 
     def _render_active_multiplayer(self):
         if self.mp_mode == "coop":
