@@ -30,8 +30,6 @@ from src.settings import (
     COOP_LEVEL,
     COOP_SCREEN_WIDTH,
     COOP_SCREEN_HEIGHT,
-    COOP_DIFFICULTIES,
-    COOP_DEFAULT_DIFFICULTY,
     COOP_DEFAULT_LIVES,
     COOP_DEFAULT_LIVES_MODE,
     DIFFICULTY_PRESETS,
@@ -104,7 +102,7 @@ class Game:
         self.coop_world = None
         self.coop_lives_mode = COOP_DEFAULT_LIVES_MODE
         self.coop_lives = COOP_DEFAULT_LIVES
-        self.coop_difficulty = COOP_DEFAULT_DIFFICULTY
+        self.coop_difficulty = "NORMAL"
 
     @property
     def frightened_active(self):
@@ -332,10 +330,10 @@ class Game:
                         self.state = GameState.MULTIPLAYER_MODE_SELECT
                     elif self.buttons.get("levels") and self.buttons["levels"].collidepoint(mouse_pos):
                         self.state = GameState.LEVEL_SELECT
-                    elif self.buttons.get("exit") and self.buttons["exit"].collidepoint(mouse_pos):
-                        self.running = False
                     elif self.buttons.get("training_switch") and self.buttons["training_switch"].collidepoint(mouse_pos):
                         self.training_mode = not self.training_mode
+                    elif self.buttons.get("exit") and self.buttons["exit"].collidepoint(mouse_pos):
+                        self.running = False
 
                 elif self.state == GameState.LEVEL_SELECT:
                     if self.buttons.get("lvl1") and self.buttons["lvl1"].collidepoint(mouse_pos):
@@ -453,6 +451,8 @@ class Game:
                 self.state = GameState.PAUSED
             elif event.key == pygame.K_m:
                 self.audio.toggle_mute()
+            elif event.key == pygame.K_t:
+                self.training_mode = not self.training_mode
 
     def _handle_multiplayer_mode_select_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -515,6 +515,8 @@ class Game:
                 self.pause_multiplayer()
             elif event.key == pygame.K_m:
                 self.audio.toggle_mute()
+            elif event.key == pygame.K_t:
+                self.training_mode = not self.training_mode
 
     def _handle_multiplayer_paused_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -530,11 +532,11 @@ class Game:
 
     def _handle_paused_events(self, event):
         if event.type == pygame.KEYDOWN:
-
             if event.key == pygame.K_ESCAPE:
                 self.state = GameState.PLAYING
                 self.audio.play_music()
-
+            elif event.key == pygame.K_t:
+                self.training_mode = not self.training_mode
 
     def _handle_game_over_events(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -620,7 +622,7 @@ class Game:
                 self.player,
                 self.frightened_active,
                 flash,
-                self.ghosts
+                self.ghosts,
             )
 
         if self.food_manager and self.player:
@@ -700,6 +702,7 @@ class Game:
 
     def render(self):
         self.screen.fill(BLACK)
+        self.buttons = {}
 
         if self.state == GameState.MENU:
             play_rect, multiplayer_rect, levels_rect, training_rect, exit_rect = self.ui.draw_menu(self.training_mode)
