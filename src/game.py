@@ -34,6 +34,8 @@ from src.settings import (
     COOP_DEFAULT_DIFFICULTY,
     COOP_DEFAULT_LIVES,
     COOP_DEFAULT_LIVES_MODE,
+    DIFFICULTY_PRESETS,
+    SCALED_TILE,
 )
 from src.sprite_loader import SpriteLoader
 from src.map import Map
@@ -74,6 +76,10 @@ class Game:
         self.level_start_time = 0.0
         self.level_time_bonus = 0
 
+        self.selected_lives = PLAYER_LIVES
+        self.selected_difficulty = "Normal"
+        self.active_frightened_duration = FRIGHTENED_DURATION
+
         self.buttons = {}
         self.audio = AudioManager()
 
@@ -111,18 +117,35 @@ class Game:
         self.eaten_ghosts.clear()
         self.level_start_time = time.time()
         self.level_time_bonus = 0
+        self._apply_difficulty()
+
+    def _apply_difficulty(self):
+        preset = DIFFICULTY_PRESETS.get(self.selected_difficulty, DIFFICULTY_PRESETS["Normal"])
+        normal_speed = SCALED_TILE * preset["ghost_speed_mult"]
+        frightened_speed = normal_speed * 0.5
+        for ghost in self.ghosts:
+            ghost.normal_speed = normal_speed
+            ghost.frightened_speed = frightened_speed
+            ghost.speed = normal_speed
+            ghost.respawn_freeze_duration = preset["respawn_freeze"]
+        self.active_frightened_duration = preset["frightened_duration"]
 
     def start_game(self):
         self.score = 0
-        self.lives = PLAYER_LIVES
+        self.lives = self.selected_lives
         self.current_level = 1
         self.load_level(self.current_level)
         self.state = GameState.PLAYING
         self.audio.play_music()
 
+    def start_gamemode(self, lives, difficulty):
+        self.selected_lives = lives
+        self.selected_difficulty = difficulty
+        self.start_game()
+
     def select_level(self, level_num):
         self.score = 0
-        self.lives = PLAYER_LIVES
+        self.lives = self.selected_lives
         self.current_level = level_num
         self.load_level(self.current_level)
         self.state = GameState.PLAYING
@@ -217,7 +240,7 @@ class Game:
                 mouse_pos = event.pos
                 if self.state == GameState.MENU:
                     if self.buttons.get("play") and self.buttons["play"].collidepoint(mouse_pos):
-                        self.start_game()
+                        self.start_gamemode(lives=PLAYER_LIVES, difficulty="Normal")
                     elif self.buttons.get("multiplayer") and self.buttons["multiplayer"].collidepoint(mouse_pos):
                         self.state = GameState.MULTIPLAYER_MODE_SELECT
                     elif self.buttons.get("gamemodes") and self.buttons["gamemodes"].collidepoint(mouse_pos):
@@ -229,12 +252,11 @@ class Game:
 
                 elif self.state == GameState.GAMEMODES_SELECT:
                     if self.buttons.get("one_life") and self.buttons["one_life"].collidepoint(mouse_pos):
-                        self.lives = 1
-                        self.start_game()
+                        self.start_gamemode(lives=1, difficulty="Normal")
                     elif self.buttons.get("hard_mode") and self.buttons["hard_mode"].collidepoint(mouse_pos):
-                        self.start_game()
+                        self.start_gamemode(lives=PLAYER_LIVES, difficulty="Hard")
                     elif self.buttons.get("battle_mode") and self.buttons["battle_mode"].collidepoint(mouse_pos):
-                        self.start_game()
+                        self.start_gamemode(lives=1, difficulty="Hard")
                     elif self.buttons.get("back") and self.buttons["back"].collidepoint(mouse_pos):
                         self.state = GameState.MENU
 
@@ -323,7 +345,7 @@ class Game:
     def _handle_menu_events(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
-                self.start_game()
+                self.start_gamemode(lives=PLAYER_LIVES, difficulty="Normal")
             elif event.key == pygame.K_ESCAPE:
                 self.running = False
 
@@ -518,7 +540,7 @@ class Game:
             self.score += int(points * self.score_multiplier)
 
             if super_dots > 0:
-                self.frightened_timer = FRIGHTENED_DURATION
+                self.frightened_timer = self.active_frightened_duration
                 self.ghost_eat_score = 200
                 self.eaten_ghosts.clear()
                 for ghost in self.ghosts:

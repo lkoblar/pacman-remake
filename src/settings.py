@@ -102,3 +102,9 @@ COOP_DIFFICULTIES = {
 COOP_DEFAULT_DIFFICULTY = "NORMAL"
 COOP_DEFAULT_LIVES = 3
 COOP_DEFAULT_LIVES_MODE = "separate"
+
+DIFFICULTY_PRESETS = {
+    "Easy":   {"ghost_speed_mult": 2.0, "frightened_duration": 10.0, "respawn_freeze": 1.5},
+    "Normal": {"ghost_speed_mult": 3.0, "frightened_duration": 7.0,  "respawn_freeze": 0.75},
+    "Hard":   {"ghost_speed_mult": 4.0, "frightened_duration": 4.0,  "respawn_freeze": 0.3},
+}
