@@ -1,5 +1,5 @@
 import pygame
-from src.settings import SCALED_TILE, SCALED_SPRITE, PLAYER_SPAWN, COLS, ROWS
+from src.settings import SCALED_TILE, SCALED_SPRITE, PLAYER_SPAWN
 
 DIRECTION_VECTORS = {
     "up": (0, -1),
@@ -13,15 +13,18 @@ HALF_OFFSET = (SCALED_SPRITE - SCALED_TILE) // 2
 
 
 class Player:
-    def __init__(self, game_map, sprite_loader):
+    def __init__(self, game_map, sprite_loader, spawn=None, tint=None):
         self.sprites = sprite_loader.pacman_sprites
+        if tint is not None:
+            self.sprites = self._apply_tint(self.sprites, tint)
         self.direction = "right"
         self.next_direction = "right"
         self.animation_frame = 0
         self.animation_timer = 0.0
         self.animation_speed = 0.1
 
-        spawn = game_map.get_spawn_position(PLAYER_SPAWN)
+        if spawn is None:
+            spawn = game_map.get_spawn_position(PLAYER_SPAWN)
         if spawn:
             self.grid_x, self.grid_y = spawn
         else:
@@ -35,20 +38,43 @@ class Player:
 
         self.speed = SCALED_TILE * 4
         self.moving = False
+        self.dead = False
 
-    def handle_input(self, keys):
-        if keys[pygame.K_UP] or keys[pygame.K_w]:
+    def _apply_tint(self, sprites, tint):
+        tinted = {}
+        for direction, frames in sprites.items():
+            new_frames = []
+            for frame in frames:
+                copy = frame.copy()
+                copy.fill((tint[0], tint[1], tint[2], 255), special_flags=pygame.BLEND_RGBA_MULT)
+                new_frames.append(copy)
+            tinted[direction] = new_frames
+        return tinted
+
+    def handle_input(self, keys, controls=None):
+        if controls is None:
+            if keys[pygame.K_UP] or keys[pygame.K_w]:
+                self.next_direction = "up"
+            elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
+                self.next_direction = "down"
+            elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
+                self.next_direction = "left"
+            elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                self.next_direction = "right"
+            return
+
+        if keys[controls["up"]]:
             self.next_direction = "up"
-        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
+        elif keys[controls["down"]]:
             self.next_direction = "down"
-        elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
+        elif keys[controls["left"]]:
             self.next_direction = "left"
-        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+        elif keys[controls["right"]]:
             self.next_direction = "right"
 
     def update(self, dt, game_map):
         self._move(dt, game_map)
-        self._wrap_tunnel()
+        self._wrap_tunnel(game_map)
         self._update_animation(dt)
 
     def _at_tile_center(self):
@@ -70,7 +96,7 @@ class Player:
             
             target_x = grid_x + dx
             target_y = grid_y + dy
-            if target_x < 0 or target_x >= COLS or target_y < 0 or target_y >= ROWS:
+            if target_x < 0 or target_x >= game_map.cols or target_y < 0 or target_y >= game_map.rows:
                 return True
                 
             return not game_map.is_wall(target_x, target_y)
@@ -127,14 +153,14 @@ class Player:
                 self.grid_x, self.grid_y = self._next_tile(self.direction)
                 self._snap_to_center()
 
-    def _wrap_tunnel(self):
-            world_width = COLS * SCALED_TILE
-            world_height = ROWS * SCALED_TILE
+    def _wrap_tunnel(self, game_map):
+            world_width = game_map.cols * SCALED_TILE
+            world_height = game_map.rows * SCALED_TILE
 
             # levo - desno teleportacija
             if self.pixel_x < -SCALED_TILE // 2:
                 self.pixel_x += world_width
-                self.grid_x = COLS - 1
+                self.grid_x = game_map.cols - 1
 
             elif self.pixel_x >= world_width - SCALED_TILE // 2:
                 self.pixel_x -= world_width
@@ -143,7 +169,7 @@ class Player:
             # zgoraj - spodaj teleportacija
             if self.pixel_y < -SCALED_TILE // 2:
                 self.pixel_y += world_height
-                self.grid_y = ROWS - 1
+                self.grid_y = game_map.rows - 1
 
             elif self.pixel_y >= world_height - SCALED_TILE // 2:
                 self.pixel_y -= world_height
