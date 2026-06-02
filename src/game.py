@@ -52,6 +52,7 @@ class Game:
         pygame.init()
         self.fullscreen = False
         self.logical_size = (SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.windowed_size = (SCREEN_WIDTH, SCREEN_HEIGHT)
         self.display = pygame.display.set_mode(self.logical_size, pygame.RESIZABLE)
         self.screen = pygame.Surface(self.logical_size).convert()
         self._view_scale = 1.0
@@ -182,8 +183,6 @@ class Game:
         self.screen = pygame.Surface(size).convert()
         if getattr(self, "ui", None) is not None:
             self.ui.screen = self.screen
-        if not self.fullscreen:
-            self._make_windowed(size)
 
     def _make_windowed(self, size):
         self.display = pygame.display.set_mode(size, pygame.RESIZABLE)
@@ -195,9 +194,9 @@ class Game:
                 self.display = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
             except pygame.error:
                 self.fullscreen = False
-                self._make_windowed(self.logical_size)
+                self._make_windowed(self.windowed_size)
         else:
-            self._make_windowed(self.logical_size)
+            self._make_windowed(self.windowed_size)
 
     def _is_fullscreen_toggle(self, event):
         if event.key in (pygame.K_F11, pygame.K_f):
@@ -318,6 +317,7 @@ class Game:
                 continue
 
             if event.type == pygame.VIDEORESIZE and not self.fullscreen:
+                self.windowed_size = event.size
                 self.display = pygame.display.set_mode(event.size, pygame.RESIZABLE)
                 continue
 
