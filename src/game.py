@@ -52,6 +52,7 @@ class Game:
         pygame.init()
         self.fullscreen = False
         self.logical_size = (SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.windowed_size = (SCREEN_WIDTH, SCREEN_HEIGHT)
         self.display = pygame.display.set_mode(self.logical_size, pygame.RESIZABLE)
         self.screen = pygame.Surface(self.logical_size).convert()
         self._view_scale = 1.0
@@ -60,7 +61,6 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.state = GameState.MENU
-        self.training_mode = False
 
         self.sprite_loader = SpriteLoader()
         self.sprite_loader.load_all()
@@ -182,8 +182,6 @@ class Game:
         self.screen = pygame.Surface(size).convert()
         if getattr(self, "ui", None) is not None:
             self.ui.screen = self.screen
-        if not self.fullscreen:
-            self._make_windowed(size)
 
     def _make_windowed(self, size):
         self.display = pygame.display.set_mode(size, pygame.RESIZABLE)
@@ -195,9 +193,9 @@ class Game:
                 self.display = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
             except pygame.error:
                 self.fullscreen = False
-                self._make_windowed(self.logical_size)
+                self._make_windowed(self.windowed_size)
         else:
-            self._make_windowed(self.logical_size)
+            self._make_windowed(self.windowed_size)
 
     def _is_fullscreen_toggle(self, event):
         if event.key in (pygame.K_F11, pygame.K_f):
@@ -318,6 +316,7 @@ class Game:
                 continue
 
             if event.type == pygame.VIDEORESIZE and not self.fullscreen:
+                self.windowed_size = event.size
                 self.display = pygame.display.set_mode(event.size, pygame.RESIZABLE)
                 continue
 
@@ -705,11 +704,10 @@ class Game:
         self.buttons = {}
 
         if self.state == GameState.MENU:
-            play_rect, multiplayer_rect, levels_rect, training_rect, exit_rect = self.ui.draw_menu(self.training_mode)
+            play_rect, multiplayer_rect, levels_rect, exit_rect = self.ui.draw_menu()
             self.buttons["play"] = play_rect
             self.buttons["multiplayer"] = multiplayer_rect
             self.buttons["levels"] = levels_rect
-            self.buttons["training_switch"] = training_rect
             self.buttons["exit"] = exit_rect
 
         elif self.state == GameState.LEVEL_SELECT:
@@ -736,9 +734,7 @@ class Game:
 
             for ghost in self.ghosts:
                 ghost.draw(game_surface)
-                if self.training_mode:
-                    ghost.draw_debug(game_surface)
-
+#                ghost.draw_debug(self.screen)
             if self.player:
                 self.player.draw(game_surface)
 
@@ -826,10 +822,10 @@ class Game:
         right_x = SCREEN_WIDTH + MP_DIVIDER
 
         left_surface = self.screen.subsurface((left_x, 50, SCREEN_WIDTH, board_height))
-        self.world1.render(left_surface, self.training_mode)
+        self.world1.render(left_surface)
 
         right_surface = self.screen.subsurface((right_x, 50, SCREEN_WIDTH, board_height))
-        self.world2.render(right_surface, self.training_mode)
+        self.world2.render(right_surface)
 
         if self.world1.finished:
             self.ui.draw_multiplayer_overlay(left_x, self.world1.finish_reason, self.world1.score)
@@ -852,7 +848,7 @@ class Game:
 
         board_height = COOP_SCREEN_HEIGHT - 50
         board_surface = self.screen.subsurface((0, 50, COOP_SCREEN_WIDTH, board_height))
-        self.coop_world.render(board_surface, self.training_mode)
+        self.coop_world.render(board_surface)
 
         lives1 = self.coop_world.lives[0] if len(self.coop_world.lives) > 0 else 0
         lives2 = self.coop_world.lives[1] if len(self.coop_world.lives) > 1 else 0

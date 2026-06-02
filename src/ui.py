@@ -17,18 +17,18 @@ class UI:
         self.font_large = pygame.font.SysFont(self.font_name, 45, bold=True)
         self.font_huge = pygame.font.SysFont(self.font_name, 140, bold=True)
 
-    def draw_menu(self, training_mode=False):
+    def draw_menu(self):
         self.screen.fill((0, 0, 0))
-
+        
         title = self.font_large.render("Pac-Man Remake", True, YELLOW)
         title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
         self.screen.blit(title, title_rect)
-
+        
         play_rect = self.draw_button("PLAY", 220)
         multiplayer_rect = self.draw_button("MULTIPLAYER", 300)
         levels_rect = self.draw_button("LEVELS", 380)
         training_rect = self.draw_switch("TRAINING", training_mode, 460)
-        exit_rect = self.draw_button("EXIT", 540)
+        exit_rect = self.draw_button("EXIT", 460)
 
         return play_rect, multiplayer_rect, levels_rect, training_rect, exit_rect
 
@@ -510,28 +510,3 @@ class UI:
         menu_rect = self._draw_centered_button("MAIN MENU", cx, h // 2 + 90)
 
         return again_rect, menu_rect
-
-    def draw_switch(self, label, value, center_y):
-        label_surf = self.font_small.render(label, True, YELLOW)
-        label_rect = label_surf.get_rect(midright=(SCREEN_WIDTH // 2 - 20, center_y))
-        self.screen.blit(label_surf, label_rect)
-
-        switch_w = 95
-        switch_h = 40
-        switch_rect = pygame.Rect(0, 0, switch_w, switch_h)
-        switch_rect.midleft = (SCREEN_WIDTH // 2 + 20, center_y)
-
-        bg_color = GREEN if value else RED
-        pygame.draw.rect(self.screen, bg_color, switch_rect, border_radius=switch_h // 2)
-        pygame.draw.rect(self.screen, BLUE, switch_rect, width=3, border_radius=switch_h // 2)
-
-        knob_size = switch_h - 8
-        knob_x = switch_rect.right - knob_size - 4 if value else switch_rect.left + 4
-        knob_rect = pygame.Rect(knob_x, switch_rect.top + 4, knob_size, knob_size)
-        pygame.draw.rect(self.screen, WHITE, knob_rect, border_radius=knob_size // 2)
-
-        state_surf = self.font_tiny.render("ON" if value else "OFF", True, BLACK)
-        state_rect = state_surf.get_rect(center=switch_rect.center)
-        self.screen.blit(state_surf, state_rect)
-
-        return switch_rect

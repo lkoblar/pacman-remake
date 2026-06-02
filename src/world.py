@@ -146,15 +146,13 @@ class PlayerWorld:
                     for g in self.ghosts:
                         g.reset_position()
 
-    def render(self, surface, training_mode=False):
+    def render(self, surface):
         if self.game_map:
             self.game_map.render(surface)
         if self.food_manager:
             self.food_manager.render(surface)
         for ghost in self.ghosts:
             ghost.draw(surface)
-            if training_mode:
-                ghost.draw_debug(surface)
         if self.player:
             self.player.draw(surface)
 
@@ -370,15 +368,13 @@ class CoopWorld:
             else:
                 p.reset_position()
 
-    def render(self, surface, training_mode=False):
+    def render(self, surface):
         if self.game_map:
             self.game_map.render(surface)
         if self.food_manager:
             self.food_manager.render(surface)
         for ghost in self.ghosts:
             ghost.draw(surface)
-            if training_mode:
-                ghost.draw_debug(surface)
         for player in self.players:
             if not player.dead:
                 player.draw(surface)
