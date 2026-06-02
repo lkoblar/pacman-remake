@@ -4,8 +4,9 @@ from src.settings import (
     TOTAL_LEVELS, MP_SCREEN_WIDTH, MP_DIVIDER,
 )
 
-BLUE_FRAME = (0, 0, 255) 
+BLUE_FRAME = (0, 0, 255)
 BLACK = (0, 0, 0)
+
 
 class UI:
     def __init__(self, screen):
@@ -26,22 +27,23 @@ class UI:
         play_rect = self.draw_button("PLAY", 220)
         multiplayer_rect = self.draw_button("MULTIPLAYER", 300)
         levels_rect = self.draw_button("LEVELS", 380)
+        training_rect = self.draw_switch("TRAINING", training_mode, 460)
         exit_rect = self.draw_button("EXIT", 460)
-        
-        return play_rect, multiplayer_rect, levels_rect, exit_rect
-    
+
+        return play_rect, multiplayer_rect, levels_rect, training_rect, exit_rect
+
     def draw_levels_menu(self):
         self.screen.fill(BLACK)
-        
+
         title = self.font_large.render("SELECT LEVEL", True, YELLOW)
         title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
         self.screen.blit(title, title_rect)
-        
+
         lvl1_rect = self.draw_button("LEVEL 1", 220)
         lvl2_rect = self.draw_button("LEVEL 2", 300)
         lvl3_rect = self.draw_button("LEVEL 3", 380)
         back_rect = self.draw_button("BACK", 500)
-        
+
         return lvl1_rect, lvl2_rect, lvl3_rect, back_rect
 
     def draw_multiplayer_difficulty(self):
@@ -109,16 +111,16 @@ class UI:
 
     def draw_button(self, text, center_y):
         text_surf = self.font_small.render(text, True, YELLOW)
-        
+
         button_rect = pygame.Rect(0, 0, 220, 45)
         button_rect.center = (SCREEN_WIDTH // 2, center_y)
-        
+
         pygame.draw.rect(self.screen, BLACK, button_rect, border_radius=5)
         pygame.draw.rect(self.screen, BLUE, button_rect, width=3, border_radius=5)
-        
+
         text_rect = text_surf.get_rect(center=button_rect.center)
         self.screen.blit(text_surf, text_rect)
-        
+
         return button_rect
 
     def draw_level_complete(self, current_level, score, time_bonus=0):
@@ -149,7 +151,7 @@ class UI:
             text_surf1 = self.font_small.render("NEXT LEVEL", True, YELLOW)
             next_rect = pygame.Rect(0, 0, 220, 45)
             next_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80)
-            
+
             pygame.draw.rect(self.screen, BLACK, next_rect, border_radius=5)
             pygame.draw.rect(self.screen, BLUE, next_rect, width=3, border_radius=5)
             self.screen.blit(text_surf1, text_surf1.get_rect(center=next_rect.center))
@@ -157,7 +159,7 @@ class UI:
             text_surf2 = self.font_small.render("MAIN MENU", True, YELLOW)
             menu_rect = pygame.Rect(0, 0, 220, 45)
             menu_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 140)
-            
+
             pygame.draw.rect(self.screen, BLACK, menu_rect, border_radius=5)
             pygame.draw.rect(self.screen, BLUE, menu_rect, width=3, border_radius=5)
             self.screen.blit(text_surf2, text_surf2.get_rect(center=menu_rect.center))
@@ -167,32 +169,29 @@ class UI:
             text_surf2 = self.font_small.render("MAIN MENU", True, YELLOW)
             menu_rect = pygame.Rect(0, 0, 220, 45)
             menu_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80)
-            
+
             pygame.draw.rect(self.screen, BLACK, menu_rect, border_radius=5)
             pygame.draw.rect(self.screen, BLUE, menu_rect, width=3, border_radius=5)
             self.screen.blit(text_surf2, text_surf2.get_rect(center=menu_rect.center))
-            
+
             return None, menu_rect
 
     def draw_hud(self, score, lives, multiplier=1.0, muted=False):
-        y_poz = 20 
-        
+        y_poz = 20
+
         score_surf = self.font_small.render(f"SCORE: {score}", True, (255, 255, 255))
         self.screen.blit(score_surf, (30, y_poz))
 
         audio_status = "AUDIO: OFF" if muted else "AUDIO: ON"
-
         audio_surf = self.font_small.render(audio_status, True, WHITE)
         audio_rect = audio_surf.get_rect(bottomleft=(20, SCREEN_HEIGHT - 10))
         self.screen.blit(audio_surf, audio_rect)
-        
+
         lives_surf = self.font_small.render(f"LIVES: {lives}", True, (255, 255, 0))
         lives_rect = lives_surf.get_rect(topright=(SCREEN_WIDTH - 30, y_poz))
         self.screen.blit(lives_surf, lives_rect)
 
     def draw_game_over(self, score):
-        YELLOW = (255, 255, 0)
-
         game_over_text = self.font_large.render("GAME OVER", True, (255, 49, 49))
         go_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
         self.screen.blit(game_over_text, go_rect)
@@ -205,16 +204,16 @@ class UI:
 
         return restart_rect
 
-    def draw_pause(self):        
+    def draw_pause(self):
         self.screen.fill(BLACK)
 
         title = self.font_large.render("PAUSED", True, YELLOW)
         title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 200))
         self.screen.blit(title, title_rect)
-        
+
         resume_rect = self.draw_button("RESUME", 300)
         menu_rect = self.draw_button("MAIN MENU", 400)
-        
+
         return resume_rect, menu_rect
 
     def draw_multiplayer_ready(self, ready1, ready2, title_text="MULTIPLAYER"):
@@ -308,7 +307,6 @@ class UI:
         self.screen.blit(overlay, (0, 0))
 
         cx = w // 2
-
         num_surf = self.font_huge.render(str(number), True, YELLOW)
         self.screen.blit(num_surf, num_surf.get_rect(center=(cx, h // 2)))
 
