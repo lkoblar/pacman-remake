@@ -519,7 +519,7 @@ class UI:
         label_rect = label_surf.get_rect(midright=(SCREEN_WIDTH // 2 - 20, center_y))
         self.screen.blit(label_surf, label_rect)
 
-        switch_w = 100
+        switch_w = 95
         switch_h = 40
         switch_rect = pygame.Rect(0, 0, switch_w, switch_h)
         switch_rect.midleft = (SCREEN_WIDTH // 2 + 20, center_y)
