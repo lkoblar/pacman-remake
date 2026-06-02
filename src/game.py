@@ -62,6 +62,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.state = GameState.MENU
+        self.training_mode = False
 
         self.sprite_loader = SpriteLoader()
         self.sprite_loader.load_all()
@@ -333,6 +334,8 @@ class Game:
                         self.state = GameState.LEVEL_SELECT
                     elif self.buttons.get("exit") and self.buttons["exit"].collidepoint(mouse_pos):
                         self.running = False
+                    elif self.buttons.get("training_switch") and self.buttons["training_switch"].collidepoint(mouse_pos):
+                        self.training_mode = not self.training_mode
 
                 elif self.state == GameState.LEVEL_SELECT:
                     if self.buttons.get("lvl1") and self.buttons["lvl1"].collidepoint(mouse_pos):
@@ -699,10 +702,11 @@ class Game:
         self.screen.fill(BLACK)
 
         if self.state == GameState.MENU:
-            play_rect, multiplayer_rect, levels_rect, exit_rect = self.ui.draw_menu()
+            play_rect, multiplayer_rect, levels_rect, training_rect, exit_rect = self.ui.draw_menu(self.training_mode)
             self.buttons["play"] = play_rect
             self.buttons["multiplayer"] = multiplayer_rect
             self.buttons["levels"] = levels_rect
+            self.buttons["training_switch"] = training_rect
             self.buttons["exit"] = exit_rect
 
         elif self.state == GameState.LEVEL_SELECT:
@@ -729,7 +733,9 @@ class Game:
 
             for ghost in self.ghosts:
                 ghost.draw(game_surface)
-#                ghost.draw_debug(self.screen)
+                if self.training_mode:
+                    ghost.draw_debug(game_surface)
+
             if self.player:
                 self.player.draw(game_surface)
 
@@ -817,10 +823,10 @@ class Game:
         right_x = SCREEN_WIDTH + MP_DIVIDER
 
         left_surface = self.screen.subsurface((left_x, 50, SCREEN_WIDTH, board_height))
-        self.world1.render(left_surface)
+        self.world1.render(left_surface, self.training_mode)
 
         right_surface = self.screen.subsurface((right_x, 50, SCREEN_WIDTH, board_height))
-        self.world2.render(right_surface)
+        self.world2.render(right_surface, self.training_mode)
 
         if self.world1.finished:
             self.ui.draw_multiplayer_overlay(left_x, self.world1.finish_reason, self.world1.score)
@@ -843,7 +849,7 @@ class Game:
 
         board_height = COOP_SCREEN_HEIGHT - 50
         board_surface = self.screen.subsurface((0, 50, COOP_SCREEN_WIDTH, board_height))
-        self.coop_world.render(board_surface)
+        self.coop_world.render(board_surface, self.training_mode)
 
         lives1 = self.coop_world.lives[0] if len(self.coop_world.lives) > 0 else 0
         lives2 = self.coop_world.lives[1] if len(self.coop_world.lives) > 1 else 0
