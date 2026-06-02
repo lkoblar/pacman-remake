@@ -23,27 +23,12 @@ class UI:
         title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
         self.screen.blit(title, title_rect)
         
-        play_rect = self.draw_button("PLAY", 200)
-        multiplayer_rect = self.draw_button("MULTIPLAYER", 265)
-        gamemodes_rect = self.draw_button("GAMEMODES", 330)
-        levels_rect = self.draw_button("LEVELS", 395)
+        play_rect = self.draw_button("PLAY", 220)
+        multiplayer_rect = self.draw_button("MULTIPLAYER", 300)
+        levels_rect = self.draw_button("LEVELS", 380)
         exit_rect = self.draw_button("EXIT", 460)
         
-        return play_rect, multiplayer_rect, gamemodes_rect, levels_rect, exit_rect
-    
-    def draw_gamemodes_menu(self):
-        self.screen.fill(BLACK)
-        
-        title = self.font_large.render("GAMEMODES", True, YELLOW)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
-        self.screen.blit(title, title_rect)
-        
-        one_life_rect = self.draw_button("ONE LIFE", 220)
-        hard_mode_rect = self.draw_button("HARD MODE", 300)
-        battle_mode_rect = self.draw_button("BATTLE MODE", 380)
-        back_rect = self.draw_button("BACK", 500)
-        
-        return one_life_rect, hard_mode_rect, battle_mode_rect, back_rect
+        return play_rect, multiplayer_rect, levels_rect, exit_rect
     
     def draw_levels_menu(self):
         self.screen.fill(BLACK)

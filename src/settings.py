@@ -39,7 +39,7 @@ class GameState(Enum):
     GAME_OVER = auto()
     LEVEL_COMPLETE = auto()
     LEVEL_SELECT = auto()
-    GAMEMODES_SELECT = auto()
+    LEVEL_DIFFICULTY = auto()
     MULTIPLAYER_MODE_SELECT = auto()
     MULTIPLAYER_DIFFICULTY = auto()
     COOP_CONFIG = auto()
@@ -108,3 +108,10 @@ DIFFICULTY_PRESETS = {
     "Normal": {"ghost_speed_mult": 3.0, "frightened_duration": 7.0,  "respawn_freeze": 0.75},
     "Hard":   {"ghost_speed_mult": 4.0, "frightened_duration": 4.0,  "respawn_freeze": 0.3},
 }
+
+SP_DIFFICULTIES = {
+    "EASY":   {"preset": "Easy",   "lives": 5},
+    "NORMAL": {"preset": "Normal", "lives": 3},
+    "HARD":   {"preset": "Hard",   "lives": 1},
+}
+SP_DEFAULT_DIFFICULTY = "NORMAL"
