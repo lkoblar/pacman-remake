@@ -2,13 +2,6 @@
 
 A Pac-Man remake built with Python and Pygame.
 
-## Team: Ctrl+C Ctrl+V
-
-- Primož Levstik
-- Žan Luka Murko Koblar
-- Mark Markež
-- Timotej Kompare
-
 ## Setup
 
 ```bash
